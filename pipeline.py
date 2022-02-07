@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 from bson.json_util import loads
 import os
+from datetime import datetime
 
 
 class Pipeline:
@@ -50,6 +51,34 @@ class Pipeline:
             frames.append(pd.read_csv(data_obj))
         self.dataframe = pd.concat(frames, axis=0, ignore_index=True)
 
+    def txt_dataframe(self):
+        #loop through all file names
+        for file in self.file_names:
+            #get data, split into lines
+            data_obj = self.client.get_object(Bucket=self.bucket_name,Key=file)["Body"].read().decode('utf-8')
+            # print(data_obj)
+            lines = data_obj.splitlines()
+            
+            #get academy and date for each file
+            academy = lines[1][:lines[1].index(" ")].strip()
+            date = lines[0][lines[0].index(" "):].strip()
+            new_date = datetime.strptime(date,"%d %B %Y").strftime('%Y-%m-%d')
+            # print(new_date)
+            
+            #loop through other lines and get data
+            for i in range(lines.index("")+1, len(lines)):
+                current_line = lines[i]
+                names_txt = current_line[0:int(current_line.index(" - ")-1)].title().strip()
+                psychometrics_score = current_line[current_line.index(": ")+1:current_line.index(",")].strip()
+                presentation_score = current_line[-5:].strip()
+
+                #append data to array
+                self.data_array.append({"name": names_txt, "psychometrics_score": psychometrics_score,
+                     "presentation_score": presentation_score, "date": new_date, "academy": academy})
+        
+        #make dataframe from array
+        self.dataframe = pd.DataFrame(data=self.data_array)
+
     def create_dataframe(self):
 
         if self.filetype == "json":
@@ -59,8 +88,7 @@ class Pipeline:
             self.csv_dataframe()
 
         elif self.filetype == "txt":
-            # txt data handling code
-            pass
+            self.txt_dataframe()
 
     def write_data(self):
         self.dataframe.to_json(self.local_filename)
@@ -77,7 +105,7 @@ class Pipeline:
         self.create_dataframe()
         self.write_data()
 
-    def extract(self, force=False):
+    def extract(self, force=True):
         try:
             if os.stat(self.local_filename).st_size == 0 or force:
                 self.extract_from_s3()
