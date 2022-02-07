@@ -6,30 +6,25 @@ pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', 500)
 pd.set_option('display.width', 1000)
 
-
+print("\n\njson Dataframe:")
 json_pip = Pipeline("data-26-final-project-files", "Talent", "json", "candidates_sparta_data.json")
 json_pip.extract()
-print(type(json_pip.dataframe['date'][0].date()))
-print(json_pip.dataframe['date'][0].date())
+print(json_pip.dataframe.head())
 
-print(f"Before {json_pip.dataframe.shape[0]}")
-dups = json_pip.remove_duplicates()
-print(dups)
-print(f"After {json_pip.dataframe.shape[0]}")
+print("\n\ncsv Talent Dataframe:")
+csv_talent_pip = Pipeline("data-26-final-project-files", "Talent", "csv", "candidate_data.json")
+csv_talent_pip.extract()
+print(csv_talent_pip.dataframe.head())
 
-json_pip.list_attributes()
-json_pip.create_attribute_tables()
+print("\n\ncsv Academy Dataframe:")
+csv_academy_pip = Pipeline("data-26-final-project-files", "Academy", "csv", "academy_data.json")
+csv_academy_pip.extract()
+print(csv_academy_pip.dataframe.head())
 
-csv_pip = Pipeline("data-26-final-project-files", "Talent", "csv", "candidate_data.json")
-csv_pip.extract()
-print(csv_pip.dataframe.shape)
-
-
-
-txt_pip = Pipeline("data-26-final-project-files", "Talent", "txt", "academy_data.json")
+print("\n\ntxt Dataframe:")
+txt_pip = Pipeline("data-26-final-project-files", "Talent", "txt", "sparta_day_data.json")
 txt_pip.extract()
-print(txt_pip.dataframe)
-
+print(txt_pip.dataframe.head())
 
 
 
