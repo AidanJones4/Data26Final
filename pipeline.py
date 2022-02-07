@@ -105,7 +105,7 @@ class Pipeline:
         self.create_dataframe()
         self.write_data()
 
-    def extract(self, force=True):
+    def extract(self, force=False):
         try:
             if os.stat(self.local_filename).st_size == 0 or force:
                 self.extract_from_s3()
