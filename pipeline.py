@@ -46,10 +46,22 @@ class Pipeline:
         Creates dataframe from each csv file then concatenates along rows
         """
         frames = []
+        start_dates = []
+        course_names = []
         for file in self.file_names:
             data_obj = self.client.get_object(Bucket=self.bucket_name, Key=file)["Body"]
             frames.append(pd.read_csv(data_obj))
+            if self.folder == 'Academy':
+                for i in range(frames[-1].shape[0]):
+                    start_dates.append(file[-14:-4].replace("-", "/"))
+                    course_names.append(file.split('/')[1][:-15])
+
         self.dataframe = pd.concat(frames, axis=0, ignore_index=True)
+
+        if self.folder == 'Academy':
+            self.dataframe['start_date'] = pd.Series(start_dates)
+            self.dataframe['course_names'] = pd.Series(course_names)
+
 
     def txt_dataframe(self):
         #loop through all file names
@@ -63,6 +75,7 @@ class Pipeline:
             academy = lines[1][:lines[1].index(" ")].strip()
             date = lines[0][lines[0].index(" "):].strip()
             new_date = datetime.strptime(date,"%d %B %Y").strftime('%Y-%m-%d')
+
             # print(new_date)
             
             #loop through other lines and get data
@@ -87,9 +100,9 @@ class Pipeline:
         self.dataframe['invited_date'] = pd.Series(date).map(lambda x: str(x).split(" ")[0].replace("-", "/")).map(lambda x: None if x == 'NaT' else x)
 
     def fix_phone_number(self):
-        self.dataframe['phone_number'] = self.dataframe['phone_number'].map(lambda x: str("".join(x.replace("  ","").replace("-", "").replace(" ", "").replace("(", " ").replace(")", "").split())), na_action='ignore')
+        self.dataframe['phone_number'] = self.dataframe['phone_number'].map(lambda x: str("".join(x.replace("  ", "").replace("-", "").replace(" ", "").replace("(", " ").replace(")", "").split())), na_action='ignore')
 
-    def csv_clean(self):
+    def talent_clean(self):
         self.combine_date_columns()
         self.fix_phone_number()
 
@@ -101,7 +114,7 @@ class Pipeline:
         elif self.filetype == "csv":
             self.csv_dataframe()
             if self.folder == "Talent":
-                self.csv_clean()
+                self.talent_clean()
 
         elif self.filetype == "txt":
             self.txt_dataframe()
@@ -173,16 +186,20 @@ class Pipeline:
             attribute_dataframe.to_json(f"{category}.json")
             self.attribute_tables.append(attribute_dataframe)
 
-    def combine_date_columns(self):
-        day = self.dataframe['invited_date'].map(lambda x: str(int(x)), na_action='ignore')
-        month_yr = self.dataframe['month'].map(lambda x: x.strip(), na_action='ignore')
-        date = pd.to_datetime(day + month_yr)
-        self.dataframe.drop(['invited_date', 'month'], axis=1, inplace=True)
-        self.dataframe['invited_date'] = pd.Series(date).map(lambda x: str(x).split(" ")[0].replace("-", "/")).map(lambda x: None if x == 'NaT' else x)
+    class Transformer:
 
-    def fix_phone_number(self):
-        self.dataframe['phone_number'] = self.dataframe['phone_number'].map(lambda x: str("".join(x.replace("  ","").replace("-", "").replace(" ", "").replace("(", " ").replace(")", "").split())), na_action='ignore')
+        def __init__(self, dataframes, output_filepath):
+            self.dataframes = dataframes
+            self.output_filepath = output_filepath
 
+        def create_candidates_table(self):
+            pass
+
+        def create_interview_table(self):
+            pass
+
+        def create_benchmarks_table(self):
+            pass
 
 
 
