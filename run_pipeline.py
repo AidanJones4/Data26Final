@@ -13,18 +13,19 @@ print(json_pip.dataframe.head())
 
 print("\n\ncsv Talent Dataframe:")
 csv_talent_pip = Pipeline("data-26-final-project-files", "Talent", "csv", "candidate_data.json")
-csv_talent_pip.extract()
+csv_talent_pip.extract(force=True)
 print(csv_talent_pip.dataframe.head())
 
 print("\n\ncsv Academy Dataframe:")
 csv_academy_pip = Pipeline("data-26-final-project-files", "Academy", "csv", "academy_data.json")
-csv_academy_pip.extract()
+csv_academy_pip.extract(force=True)
 print(csv_academy_pip.dataframe.head())
 
 print("\n\ntxt Dataframe:")
 txt_pip = Pipeline("data-26-final-project-files", "Talent", "txt", "sparta_day_data.json")
-txt_pip.extract()
+txt_pip.extract(force=True)
 print(txt_pip.dataframe.head())
+
 
 
 
