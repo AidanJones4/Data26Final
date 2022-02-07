@@ -5,7 +5,7 @@ from bson.json_util import loads
 import os
 
 
-class Pipeline:
+class Extractor:
 
     def __init__(self, bucket_name, folder, filetype, local_filename):
         self.bucket_name = bucket_name
@@ -35,7 +35,7 @@ class Pipeline:
         """
         for file in self.file_names:
             data_obj = self.client.get_object(Bucket=self.bucket_name, Key=file)["Body"]
-            data = loads(data_obj.next())
+            data = loads(data_obj)
             self.data_array.append(data)
 
         self.dataframe = pd.DataFrame(self.data_array)
@@ -129,7 +129,20 @@ class Pipeline:
             attribute_dataframe.to_json(f"{category}.json")
             self.attribute_tables.append(attribute_dataframe)
 
-    # def create_junction_tables(self):
+    def create_junction_tables(self, id_column):
+
+
+    def remove_non_atomic_columns(self):
+
+        self.dataframe.drop(columns=list(self.attributes.keys()), inplace=True)
+    #
+    # def atomize(self):
+    #     self.create_attribute_tables()
+    #     self.create_junction_tables()
+    #     self.remove_non_atomic_columns()
+
+
+
 
 
 
