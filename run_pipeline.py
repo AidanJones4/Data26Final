@@ -26,6 +26,11 @@ print(csv_pip.dataframe.shape)
 
 
 
+txt_pip = Pipeline("data-26-final-project-files", "Talent", "txt", "academy_data.json")
+txt_pip.extract()
+print(txt_pip.dataframe)
+
+
 
 
 
