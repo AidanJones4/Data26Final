@@ -79,6 +79,20 @@ class Pipeline:
         #make dataframe from array
         self.dataframe = pd.DataFrame(data=self.data_array)
 
+    def combine_date_columns(self):
+        day = self.dataframe['invited_date'].map(lambda x: str(int(x)), na_action='ignore')
+        month_yr = self.dataframe['month'].map(lambda x: x.strip(), na_action='ignore')
+        date = pd.to_datetime(day + month_yr)
+        self.dataframe.drop(['invited_date', 'month'], axis=1, inplace=True)
+        self.dataframe['invited_date'] = pd.Series(date).map(lambda x: str(x).split(" ")[0].replace("-", "/")).map(lambda x: None if x == 'NaT' else x)
+
+    def fix_phone_number(self):
+        self.dataframe['phone_number'] = self.dataframe['phone_number'].map(lambda x: str("".join(x.replace("  ","").replace("-", "").replace(" ", "").replace("(", " ").replace(")", "").split())), na_action='ignore')
+
+    def csv_clean(self):
+        self.combine_date_columns()
+        self.fix_phone_number()
+
     def create_dataframe(self):
 
         if self.filetype == "json":
@@ -86,6 +100,8 @@ class Pipeline:
 
         elif self.filetype == "csv":
             self.csv_dataframe()
+            if self.folder == "Talent":
+                self.csv_clean()
 
         elif self.filetype == "txt":
             self.txt_dataframe()
@@ -157,7 +173,22 @@ class Pipeline:
             attribute_dataframe.to_json(f"{category}.json")
             self.attribute_tables.append(attribute_dataframe)
 
-    # def create_junction_tables(self):
+    def combine_date_columns(self):
+        day = self.dataframe['invited_date'].map(lambda x: str(int(x)), na_action='ignore')
+        month_yr = self.dataframe['month'].map(lambda x: x.strip(), na_action='ignore')
+        date = pd.to_datetime(day + month_yr)
+        self.dataframe.drop(['invited_date', 'month'], axis=1, inplace=True)
+        self.dataframe['invited_date'] = pd.Series(date).map(lambda x: str(x).split(" ")[0].replace("-", "/")).map(lambda x: None if x == 'NaT' else x)
+
+    def fix_phone_number(self):
+        self.dataframe['phone_number'] = self.dataframe['phone_number'].map(lambda x: str("".join(x.replace("  ","").replace("-", "").replace(" ", "").replace("(", " ").replace(")", "").split())), na_action='ignore')
+
+
+
+
+
+
+
 
 
 
