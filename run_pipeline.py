@@ -13,7 +13,7 @@ print(json_pip.dataframe.head())
 
 print("\n\ncsv Talent Dataframe:")
 csv_talent_pip = Pipeline("data-26-final-project-files", "Talent", "csv", "candidate_data.json")
-csv_talent_pip.extract(force=True)
+csv_talent_pip.extract()
 print(csv_talent_pip.dataframe.head())
 
 print("\n\ncsv Academy Dataframe:")

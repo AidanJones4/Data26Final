@@ -125,7 +125,8 @@ class Pipeline:
 
     def load_local_dataframe(self):
         try:
-            self.dataframe = pd.read_json(self.local_filename, dtype={"phone_number": str})
+            self.dataframe = pd.read_json(self.local_filename, dtype={"phone_number": str},
+                                          convert_datesbool=["date", "start_date", "invited_date"])
         except FileNotFoundError:
             print(f"{self.local_filename} does not exist in local directory.")
             return None
