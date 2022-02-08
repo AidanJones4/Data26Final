@@ -102,9 +102,18 @@ class Pipeline:
     def fix_phone_number(self):
         self.dataframe['phone_number'] = self.dataframe['phone_number'].map(lambda x: str("".join(x.replace("  ", "").replace("-", "").replace(" ", "").replace("(", " ").replace(")", "").split())), na_action='ignore')
 
+    def combine_address_columns(self):
+        address = self.dataframe['address']
+        city = self.dataframe['city']
+        postcode = self.dataframe['postcode']
+        full_address = (address + ', ' + city + ', ' + postcode)
+        self.dataframe.drop(['address', 'city', 'postcode'], axis=1, inplace=True)
+        self.dataframe['full_address'] = pd.Series(full_address).map(lambda x: None if x == 'NaN' else x)
+
     def talent_clean(self):
         self.combine_date_columns()
         self.fix_phone_number()
+        self.combine_address_columns()
         self.dataframe.drop(["id"], axis=1, inplace=True)
 
     def create_dataframe(self):
@@ -125,7 +134,8 @@ class Pipeline:
 
     def load_local_dataframe(self):
         try:
-            self.dataframe = pd.read_json(self.local_filename, dtype={"phone_number": str})
+            self.dataframe = pd.read_json(self.local_filename, dtype={"phone_number": str},
+                                          convert_dates=["date", "start_date", "invited_date", "dob"])
         except FileNotFoundError:
             print(f"{self.local_filename} does not exist in local directory.")
             return None
@@ -187,32 +197,57 @@ class Pipeline:
             attribute_dataframe.to_json(f"{category}.json")
             self.attribute_tables.append(attribute_dataframe)
 
-    class Transformer:
+class Transformer:
 
-        def __init__(self, candidates_sparta, candidates, academy, sparta_day, output_filepath):
-            self.candidates_sparta = candidates_sparta
-            self.candidates = candidates
-            self.academy = academy
-            self.sparta_day = sparta_day
-            self.output_filepath = output_filepath
+    def __init__(self, candidates_sparta, candidates, academy, sparta_day, output_filepath):
+        self.candidates_sparta = candidates_sparta
+        self.candidates = candidates
+        self.academy = academy
+        self.sparta_day = sparta_day
+        self.output_filepath = output_filepath
+        self.big_table = pd.DataFrame()
+        self._create_big_table()
 
-        def create_big_table(self):
+        self.candidates_table = pd.DataFrame()
 
-            pass
+    def remove_duplicates(self,df):
+        dup_mask = df.applymap(lambda x: str(x)).duplicated()
+        return df[dup_mask.map(lambda x: not x)]
 
-        def create_candidates_table(self):
-            pass
+    def _create_big_table(self):
+        self.candidates_sparta.rename(columns={'date': 'invited_date'}, inplace=True)
+        self.sparta_day.rename(columns={'date': 'invited_date'}, inplace=True)
 
-        def create_interview_table(self):
-            pass
+        big_table = pd.merge(self.candidates_sparta, self.candidates,
+                                                on=["name", "invited_date"], how='outer')
+        big_table = pd.merge(big_table, self.academy,
+                                                on=["name"], how='outer')
+        big_table = pd.merge(big_table, self.sparta_day,
+                                                on=["name", "invited_date"], how='outer')
 
-        def create_benchmarks_table(self):
-            pass
+        big_table_drop_dupes = self.remove_duplicates(big_table).copy()
+        big_table_drop_dupes.reset_index(inplace=True)
+        big_table_drop_dupes.drop("index", axis=1, inplace=True)
+        big_table_drop_dupes["candidate_id"] = big_table_drop_dupes.index.map(lambda x: x + 10001)
 
-        #More methods...
+        self.big_table = big_table_drop_dupes
 
-        def transform(self):
-            self.create_big_table()
+
+
+    def create_candidates_table(self):
+        self.candidates_table = self.big_table[["candidate_id", "name", "gender", "dob", "email", "full_address",
+                                                     "phone_number", "uni", "degree", "invited_date", "invited_by",
+                                                      "geo_flex", "course_interest"]].copy()
+        print(self.candidates_table)
+
+    def create_interview_table(self):
+        pass
+
+    def create_benchmarks_table(self):
+        pass
+
+    #More methods...
+
 
 
 
