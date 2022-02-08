@@ -112,6 +112,14 @@ class Pipeline:
         self.dataframe.drop(['address', 'city', 'postcode'], axis=1, inplace=True)
         self.dataframe['full_address'] = pd.Series(full_address).map(lambda x: None if x == 'NaN' else x)
 
+    def combine_address_columns(self):
+        address = self.dataframe['address']
+        city = self.dataframe['city']
+        postcode = self.dataframe['postcode']
+        full_address = (address + ', ' + city + ', ' + postcode)
+        self.dataframe.drop(['address', 'city', 'postcode'], axis=1, inplace=True)
+        self.dataframe['full_address'] = pd.Series(full_address).map(lambda x: None if x == 'NaN' else x)
+
     def talent_clean(self):
         self.combine_date_columns()
         self.fix_phone_number()
@@ -199,7 +207,6 @@ class Pipeline:
             attribute_dataframe.to_json(f"{category}.json")
             self.attribute_tables.append(attribute_dataframe)
 
-
 class Transformer:
 
     def __init__(self, candidates_sparta, candidates, academy, sparta_day, output_filepath):
@@ -216,7 +223,7 @@ class Transformer:
         self.course_table = pd.DataFrame()
         self.candidates_course_j_table = pd.DataFrame()
 
-    def remove_duplicates(self, df):
+    def remove_duplicates(self,df):
         dup_mask = df.applymap(lambda x: str(x)).duplicated()
         return df[dup_mask.map(lambda x: not x)]
 
@@ -225,11 +232,11 @@ class Transformer:
         self.sparta_day.rename(columns={'date': 'invited_date'}, inplace=True)
 
         big_table = pd.merge(self.candidates_sparta, self.candidates,
-                             on=["name", "invited_date"], how='outer')
+                                                on=["name", "invited_date"], how='outer')
         big_table = pd.merge(big_table, self.academy,
-                             on=["name"], how='outer')
+                                                on=["name"], how='outer')
         big_table = pd.merge(big_table, self.sparta_day,
-                             on=["name", "invited_date"], how='outer')
+                                                on=["name", "invited_date"], how='outer')
 
         big_table_drop_dupes = self.remove_duplicates(big_table).copy()
         big_table_drop_dupes.reset_index(inplace=True)
@@ -238,10 +245,12 @@ class Transformer:
 
         self.big_table = big_table_drop_dupes
 
+
+
     def create_candidates_table(self):
         self.candidates_table = self.big_table[["candidate_id", "name", "gender", "dob", "email", "full_address",
-                                                "phone_number", "uni", "degree", "invited_date", "invited_by",
-                                                "geo_flex", "course_interest"]].copy()
+                                                     "phone_number", "uni", "degree", "invited_date", "invited_by",
+                                                      "geo_flex", "course_interest"]].copy()
         print(self.candidates_table)
 
     def create_interview_table(self):
