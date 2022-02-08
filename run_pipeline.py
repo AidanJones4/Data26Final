@@ -18,13 +18,13 @@ print(csv_talent_pip.dataframe.head())
 
 print("\n\ncsv Academy Dataframe:")
 csv_academy_pip = Pipeline("data-26-final-project-files", "Academy", "csv", "academy_data.json")
-csv_academy_pip.extract(force = True)
+csv_academy_pip.extract()
 print(csv_academy_pip.dataframe.head())
 
 print("\n\ntxt Dataframe:")
 txt_pip = Pipeline("data-26-final-project-files", "Talent", "txt", "sparta_day_data.json")
-txt_pip.extract(force=True)
-print(txt_pip.dataframe.head())
+txt_pip.extract()
+print(txt_pip.dataframe)
 
 
 

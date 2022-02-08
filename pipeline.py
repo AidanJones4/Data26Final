@@ -81,7 +81,7 @@ class Pipeline:
             #loop through other lines and get data
             for i in range(lines.index("")+1, len(lines)):
                 current_line = lines[i]
-                names_txt = current_line[0:int(current_line.index(" - ")-1)].title().strip()
+                names_txt = current_line[0:int(current_line.index(" - "))].title().strip()
                 psychometrics_score = current_line[current_line.index(": ")+1:current_line.index(",")].strip()
                 presentation_score = current_line[-5:].strip()
 
@@ -105,6 +105,7 @@ class Pipeline:
     def talent_clean(self):
         self.combine_date_columns()
         self.fix_phone_number()
+        self.dataframe.drop(["id"], axis=1, inplace=True)
 
     def create_dataframe(self):
 
@@ -124,7 +125,7 @@ class Pipeline:
 
     def load_local_dataframe(self):
         try:
-            self.dataframe = pd.read_json(self.local_filename)
+            self.dataframe = pd.read_json(self.local_filename, dtype={"phone_number": str})
         except FileNotFoundError:
             print(f"{self.local_filename} does not exist in local directory.")
             return None
@@ -188,9 +189,16 @@ class Pipeline:
 
     class Transformer:
 
-        def __init__(self, dataframes, output_filepath):
-            self.dataframes = dataframes
+        def __init__(self, candidates_sparta, candidates, academy, sparta_day, output_filepath):
+            self.candidates_sparta = candidates_sparta
+            self.candidates = candidates
+            self.academy = academy
+            self.sparta_day = sparta_day
             self.output_filepath = output_filepath
+
+        def create_big_table(self):
+
+            pass
 
         def create_candidates_table(self):
             pass
@@ -200,6 +208,11 @@ class Pipeline:
 
         def create_benchmarks_table(self):
             pass
+
+        #More methods...
+
+        def transform(self):
+            self.create_big_table()
 
 
 
