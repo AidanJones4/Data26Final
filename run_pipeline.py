@@ -19,36 +19,18 @@ print(csv_talent_pip.dataframe)
 print("\n\ncsv Academy Dataframe:")
 csv_academy_pip = Pipeline("data-26-final-project-files", "Academy", "csv", "academy_data.json")
 csv_academy_pip.extract()
-print(csv_academy_pip.dataframe)
+print(csv_academy_pip.dataframe.head())
 
 print("\n\ntxt Dataframe:")
 txt_pip = Pipeline("data-26-final-project-files", "Talent", "txt", "sparta_day_data.json")
 txt_pip.extract()
 print(txt_pip.dataframe)
 
-
-
-
 transform = Transformer(json_pip.dataframe, csv_talent_pip.dataframe, csv_academy_pip.dataframe, txt_pip.dataframe, "foo.json")
 
-transform.list_attributes()
-transform.create_attribute_tables()
-
-transform.create_candidates_table()
-transform.create_interview_table()
-
-transform.create_tech_skill_tables()
-
-transform.create_quality_junction()
-transform.create_quality_table()
-
-
-print(transform.interview_table)
-print(transform.candidates_table)
-print(transform.tech_skills_table)
-print(transform.tech_junction_table)
-print(transform.quality_table)
-print(transform.quality_junction_table)
+transform.create_tables()
+print(transform.big_table)
+transform.print_tables()
 
 
 

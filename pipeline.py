@@ -219,15 +219,42 @@ class Transformer:
         self.output_filepath = output_filepath
         self.big_table = pd.DataFrame()
         self._create_big_table()
+
         self.attributes = {}
         self.attribute_tables = []
+
         self.interview_table = pd.DataFrame()
+        
         self.candidates_table = pd.DataFrame()
 
         self.tech_skills_table = pd.DataFrame()
         self.tech_junction_table = pd.DataFrame()
         self.quality_table = pd.DataFrame()
         self.quality_junction_table = pd.DataFrame()
+
+    def _create_big_table(self):
+        self.candidates_sparta.rename(columns={'date': 'invited_date'}, inplace=True)
+        self.sparta_day.rename(columns={'date': 'invited_date'}, inplace=True)
+
+        self.candidates_sparta["name"] = self.candidates_sparta["name"].str.title()
+        self.candidates["name"] = self.candidates["name"].str.title()
+        self.academy["name"] = self.academy["name"].str.title()
+        self.sparta_day["name"] = self.sparta_day["name"].str.title()
+
+        big_table = pd.merge(self.candidates_sparta, self.candidates,
+                             on=["name", "invited_date"], how='outer')
+        big_table = pd.merge(big_table, self.academy,
+                             on=["name"], how='outer')
+        big_table = pd.merge(big_table, self.sparta_day,
+                             on=["name", "invited_date"], how='outer')
+
+        big_table_drop_dupes = self.remove_duplicates(big_table).copy()
+        big_table_drop_dupes.reset_index(inplace=True)
+        big_table_drop_dupes.drop("index", axis=1, inplace=True)
+        big_table_drop_dupes["candidate_id"] = big_table_drop_dupes.index.map(lambda x: x + 10001)
+        big_table_drop_dupes["qualities"] = big_table_drop_dupes["strengths"] + big_table_drop_dupes["weaknesses"]
+
+        self.big_table = big_table_drop_dupes
 
     def list_attributes(self):
         """
@@ -323,28 +350,9 @@ class Transformer:
         dup_mask = df.applymap(lambda x: str(x)).duplicated()
         return df[dup_mask.map(lambda x: not x)]
 
-    def _create_big_table(self):
-        self.candidates_sparta.rename(columns={'date': 'invited_date'}, inplace=True)
-        self.sparta_day.rename(columns={'date': 'invited_date'}, inplace=True)
-
-        big_table = pd.merge(self.candidates_sparta, self.candidates,
-                                                on=["name", "invited_date"], how='outer')
-        big_table = pd.merge(big_table, self.academy,
-                                                on=["name"], how='outer')
-        big_table = pd.merge(big_table, self.sparta_day,
-                                                on=["name", "invited_date"], how='outer')
-
-        big_table_drop_dupes = self.remove_duplicates(big_table).copy()
-        big_table_drop_dupes.reset_index(inplace=True)
-        big_table_drop_dupes.drop("index", axis=1, inplace=True)
-        big_table_drop_dupes["candidate_id"] = big_table_drop_dupes.index.map(lambda x: x + 10001)
-        big_table_drop_dupes["qualities"] = big_table_drop_dupes["strengths"] + big_table_drop_dupes["weaknesses"]
-
-        self.big_table = big_table_drop_dupes
-
     def create_candidates_table(self):
         self.candidates_table = self.big_table[["candidate_id", "name", "gender", "dob", "email", "full_address",
-                                                     "phone_number", "uni", "degree", "invited_date", "invited_by",
+                                                     "phone_number", "uni", "degree", "invited_date",
                                                       "geo_flex", "course_interest"]].copy()
 
     def create_interview_table(self):
@@ -387,11 +395,24 @@ class Transformer:
             self.course_table.set_index('Course_Names')['Course_ID'])
 
     def create_tables(self):
+        self.list_attributes()
+        self.create_attribute_tables()
+        self.create_candidates_table()
+        self.create_interview_table()
+        self.create_tech_skill_tables()
+        self.create_quality_junction()
+        self.create_quality_table()
         self.create_trainer_table()
         self.create_course_table()
         self.create_candidates_course_j_table()
 
     def print_tables(self):
+        print(self.interview_table)
+        print(self.candidates_table)
+        print(self.tech_skills_table)
+        print(self.tech_junction_table)
+        print(self.quality_table)
+        print(self.quality_junction_table)
         print(self.trainer_table)
         print(self.course_table)
         print(self.candidates_course_j_table)
