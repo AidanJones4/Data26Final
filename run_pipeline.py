@@ -4,7 +4,7 @@ from pipeline import *
 # Pandas display settings
 pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', 500)
-pd.set_option('display.width', 1000)
+pd.set_option('display.width', 5000)
 
 print("\n\njson Dataframe:")
 json_pip = Pipeline("data-26-final-project-files", "Talent", "json", "candidates_sparta_data.json")
@@ -13,7 +13,7 @@ print(json_pip.dataframe.head())
 
 print("\n\ncsv Talent Dataframe:")
 csv_talent_pip = Pipeline("data-26-final-project-files", "Talent", "csv", "candidate_data.json")
-csv_talent_pip.extract()
+csv_talent_pip.extract(force=True)
 print(csv_talent_pip.dataframe.head())
 
 print("\n\ncsv Academy Dataframe:")
@@ -27,12 +27,13 @@ txt_pip.extract()
 print(txt_pip.dataframe)
 
 
+print("\n\nBIG TABLE sick\n")
 
 
+big_table = Transformer(json_pip.dataframe, csv_talent_pip.dataframe, csv_academy_pip.dataframe, txt_pip.dataframe, "foo.json")
+print(big_table.big_table)
+big_table.create_candidates_table()
 
-
-
-
-
-
+big_table.create_tables()
+big_table.print_tables()
 
