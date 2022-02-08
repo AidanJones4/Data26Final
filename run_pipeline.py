@@ -26,21 +26,10 @@ txt_pip = Pipeline("data-26-final-project-files", "Talent", "txt", "sparta_day_d
 txt_pip.extract()
 print(txt_pip.dataframe)
 
-
-print("\n\nBIG TABLE sick\n")
-
-
 big_table = Transformer(json_pip.dataframe, csv_talent_pip.dataframe, csv_academy_pip.dataframe, txt_pip.dataframe, "foo.json")
 print(big_table.big_table)
 big_table.create_candidates_table()
 
-
-
-
-
-
-
-
-
-
+big_table.create_tables()
+big_table.print_tables()
 

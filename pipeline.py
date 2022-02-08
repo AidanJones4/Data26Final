@@ -62,34 +62,33 @@ class Pipeline:
             self.dataframe['start_date'] = pd.Series(start_dates)
             self.dataframe['course_names'] = pd.Series(course_names)
 
-
     def txt_dataframe(self):
-        #loop through all file names
+        # loop through all file names
         for file in self.file_names:
-            #get data, split into lines
-            data_obj = self.client.get_object(Bucket=self.bucket_name,Key=file)["Body"].read().decode('utf-8')
+            # get data, split into lines
+            data_obj = self.client.get_object(Bucket=self.bucket_name, Key=file)["Body"].read().decode('utf-8')
             # print(data_obj)
             lines = data_obj.splitlines()
-            
-            #get academy and date for each file
+
+            # get academy and date for each file
             academy = lines[1][:lines[1].index(" ")].strip()
             date = lines[0][lines[0].index(" "):].strip()
-            new_date = datetime.strptime(date,"%d %B %Y").strftime('%Y-%m-%d')
+            new_date = datetime.strptime(date, "%d %B %Y").strftime('%Y-%m-%d')
 
             # print(new_date)
-            
-            #loop through other lines and get data
-            for i in range(lines.index("")+1, len(lines)):
+
+            # loop through other lines and get data
+            for i in range(lines.index("") + 1, len(lines)):
                 current_line = lines[i]
                 names_txt = current_line[0:int(current_line.index(" - "))].title().strip()
-                psychometrics_score = current_line[current_line.index(": ")+1:current_line.index(",")].strip()
+                psychometrics_score = current_line[current_line.index(": ") + 1:current_line.index(",")].strip()
                 presentation_score = current_line[-5:].strip()
 
-                #append data to array
+                # append data to array
                 self.data_array.append({"name": names_txt, "psychometrics_score": psychometrics_score,
-                     "presentation_score": presentation_score, "date": new_date, "academy": academy})
-        
-        #make dataframe from array
+                                        "presentation_score": presentation_score, "date": new_date, "academy": academy})
+
+        # make dataframe from array
         self.dataframe = pd.DataFrame(data=self.data_array)
 
     def combine_date_columns(self):
@@ -97,10 +96,21 @@ class Pipeline:
         month_yr = self.dataframe['month'].map(lambda x: x.strip(), na_action='ignore')
         date = pd.to_datetime(day + month_yr)
         self.dataframe.drop(['invited_date', 'month'], axis=1, inplace=True)
-        self.dataframe['invited_date'] = pd.Series(date).map(lambda x: str(x).split(" ")[0].replace("-", "/")).map(lambda x: None if x == 'NaT' else x)
+        self.dataframe['invited_date'] = pd.Series(date).map(lambda x: str(x).split(" ")[0].replace("-", "/")).map(
+            lambda x: None if x == 'NaT' else x)
 
     def fix_phone_number(self):
-        self.dataframe['phone_number'] = self.dataframe['phone_number'].map(lambda x: str("".join(x.replace("  ", "").replace("-", "").replace(" ", "").replace("(", " ").replace(")", "").split())), na_action='ignore')
+        self.dataframe['phone_number'] = self.dataframe['phone_number'].map(lambda x: str(
+            "".join(x.replace("  ", "").replace("-", "").replace(" ", "").replace("(", " ").replace(")", "").split())),
+                                                                            na_action='ignore')
+
+    def combine_address_columns(self):
+        address = self.dataframe['address']
+        city = self.dataframe['city']
+        postcode = self.dataframe['postcode']
+        full_address = (address + ', ' + city + ', ' + postcode)
+        self.dataframe.drop(['address', 'city', 'postcode'], axis=1, inplace=True)
+        self.dataframe['full_address'] = pd.Series(full_address).map(lambda x: None if x == 'NaN' else x)
 
     def combine_address_columns(self):
         address = self.dataframe['address']
@@ -209,6 +219,9 @@ class Transformer:
         self._create_big_table()
 
         self.candidates_table = pd.DataFrame()
+        self.trainer_table = pd.DataFrame()
+        self.course_table = pd.DataFrame()
+        self.candidates_course_j_table = pd.DataFrame()
 
     def remove_duplicates(self,df):
         dup_mask = df.applymap(lambda x: str(x)).duplicated()
@@ -246,20 +259,37 @@ class Transformer:
     def create_benchmarks_table(self):
         pass
 
-    #More methods...
+    def create_trainer_table(self):
+        self.trainer_table = self.big_table[["trainer"]].copy()
+        self.trainer_table = self.trainer_table.rename(columns={"trainer": "Trainer_Name"})
+        self.trainer_table = self.trainer_table.drop_duplicates().reset_index(drop=True)
 
+        self.trainer_table["Trainer_ID"] = self.trainer_table.index.map(lambda x: x + 1)
 
+    def create_course_table(self):
+        self.course_table = self.big_table[["course_names", "trainer"]].copy()
+        self.course_table = self.course_table.rename(columns={"course_names": "Course_Names"})
+        self.course_table = self.course_table.drop_duplicates().reset_index(drop=True)
 
+        self.course_table['trainer'] = self.course_table.trainer.replace(
+            self.trainer_table.set_index('Trainer_Name')['Trainer_ID'])
 
+        self.course_table["Course_ID"] = self.course_table.index.map(lambda x: x + 1)
 
+    def create_candidates_course_j_table(self):
+        self.candidates_course_j_table = self.big_table[["candidate_id", "course_names"]].copy()
 
+        self.candidates_course_j_table['course_names'] = self.candidates_course_j_table.course_names.replace(
+            self.course_table.set_index('Course_Names')['Course_ID'])
 
+    def create_tables(self):
+        self.create_trainer_table()
+        self.create_course_table()
+        self.create_candidates_course_j_table()
 
+    def print_tables(self):
+        print(self.trainer_table)
+        print(self.course_table)
+        print(self.candidates_course_j_table)
 
-
-
-
-
-
-
-
+    # More methods...
