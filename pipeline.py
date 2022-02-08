@@ -2,6 +2,7 @@ import boto3
 import numpy as np
 import pandas as pd
 from bson.json_util import loads
+import json
 import os
 from datetime import datetime
 
@@ -37,6 +38,7 @@ class Pipeline:
         for file in self.file_names:
             data_obj = self.client.get_object(Bucket=self.bucket_name, Key=file)["Body"]
             data = loads(data_obj.next())
+            data["date"] = datetime.strptime(data["date"].replace("/", ""), "%d%m%Y").strftime("%Y/%m/%d")
             self.data_array.append(data)
 
         self.dataframe = pd.DataFrame(self.data_array)
@@ -217,13 +219,107 @@ class Transformer:
         self.output_filepath = output_filepath
         self.big_table = pd.DataFrame()
         self._create_big_table()
-
+        self.attributes = {}
+        self.attribute_tables = []
+        self.interview_table = pd.DataFrame()
         self.candidates_table = pd.DataFrame()
-        self.trainer_table = pd.DataFrame()
-        self.course_table = pd.DataFrame()
-        self.candidates_course_j_table = pd.DataFrame()
 
-    def remove_duplicates(self,df):
+        self.tech_skills_table = pd.DataFrame()
+        self.tech_junction_table = pd.DataFrame()
+        self.quality_table = pd.DataFrame()
+        self.quality_junction_table = pd.DataFrame()
+
+    def list_attributes(self):
+        """
+        :return: Dictionary of attributes. Each key corresponds to a column that needs to be atomized.
+                 Dictionary values contain list of unique values present in column
+        """
+        for col in self.big_table:
+            self.attributes[col] = []
+            for val in self.big_table[col]:
+
+                if type(val) == list:
+                    for elt in val:
+                        if elt not in self.attributes[col]:
+                            self.attributes[col].append(elt)
+
+                elif type(val) == dict:
+                    for key in val.keys():
+                        if key not in self.attributes[col]:
+                            self.attributes[col].append(key)
+
+            if not self.attributes[col]:
+                self.attributes.pop(col)
+        return self.attributes
+
+    def create_attribute_tables(self):
+
+        """
+        Crates separate dataframe for columns needing atomizing
+        """
+        for category in self.attributes:
+            attribute_dataframe = pd.DataFrame({f"{category}": self.attributes[category]})
+            attribute_dataframe[f"{category}_id"] = attribute_dataframe.index
+            attribute_dataframe.to_json(f"{category}.json")
+            self.attribute_tables.append(attribute_dataframe)
+
+    def create_tech_skill_tables(self):
+        big_table_nonan = self.big_table.dropna(subset=["tech_self_score"])
+        big_table_numpy = big_table_nonan.to_numpy()
+
+        tech_skills_df = pd.read_json("tech_self_score.json")
+        tech_skills_df["tech_self_score_id"] = tech_skills_df["tech_self_score_id"].map(lambda x: x+1)
+
+        self.tech_skills_table = tech_skills_df.copy()
+        self.tech_skills_table.columns = ["skill_name", "tech_skill_id"]
+
+
+        tech_skills_df.index = tech_skills_df["tech_self_score"]
+        tech_skills_df.drop(["tech_self_score"], axis=1, inplace=True)
+        tech_skills_df.T.to_json("tech_skills.json", orient="records")
+        with open("tech_skills.json") as f:
+            tech_skills_dict = json.load(f)
+
+        jt_tech_skills = []
+        for each in big_table_numpy:
+            if each[2] is not None:
+                for x,y in each[2].items():
+                    jt_tech_skills.append([each[-2],tech_skills_dict[0][x],y])
+        jt_tech_skills_df = pd.DataFrame(jt_tech_skills)
+
+        jt_tech_skills_df.columns = ["candidate_id","skill_id","score"]
+        self.tech_junction_table = jt_tech_skills_df
+
+    def create_quality_junction(self):
+        big_table_nonan = self.big_table.dropna(subset=["qualities"])
+        qualities_df = pd.read_json("qualities.json")
+        self.quality_table = qualities_df.copy()
+        qualities_df.index = qualities_df["qualities"]
+        qualities_df.drop("qualities", inplace=True, axis=1)
+
+        qualities_df.T.to_json("quality.json", orient="records")
+
+        with open("quality.json") as f:
+            quality_dict = json.load(f)
+
+        big_table_np = big_table_nonan.to_numpy()
+
+        jt_qualities = []
+
+        for each in big_table_np:
+            for quality in each[-1]:
+                jt_qualities.append([each[-2], quality_dict[0][quality]])
+
+        jt_qualities_df = pd.DataFrame(jt_qualities)
+        jt_qualities_df.columns = ["Candidate ID", "Quality ID"]
+
+        self.quality_junction_table = jt_qualities_df
+
+    def create_quality_table(self):
+        strengths = self.attributes["strengths"]
+        self.quality_table["is_strengths"] = self.quality_table["qualities"].map(lambda x: 1 if x in strengths else 0)
+
+    def remove_duplicates(self, df):
         dup_mask = df.applymap(lambda x: str(x)).duplicated()
         return df[dup_mask.map(lambda x: not x)]
 
@@ -242,19 +338,26 @@ class Transformer:
         big_table_drop_dupes.reset_index(inplace=True)
         big_table_drop_dupes.drop("index", axis=1, inplace=True)
         big_table_drop_dupes["candidate_id"] = big_table_drop_dupes.index.map(lambda x: x + 10001)
+        big_table_drop_dupes["qualities"] = big_table_drop_dupes["strengths"] + big_table_drop_dupes["weaknesses"]
 
         self.big_table = big_table_drop_dupes
-
-
 
     def create_candidates_table(self):
         self.candidates_table = self.big_table[["candidate_id", "name", "gender", "dob", "email", "full_address",
                                                      "phone_number", "uni", "degree", "invited_date", "invited_by",
                                                       "geo_flex", "course_interest"]].copy()
-        print(self.candidates_table)
 
     def create_interview_table(self):
-        pass
+        self.interview_table = self.big_table[["candidate_id", "invited_date", "self_development",
+                                               "geo_flex", "result"]].copy()
+        self.interview_table.dropna(axis=0,subset=["invited_date", "self_development",
+                                                            "geo_flex", "result"], how="all", inplace=True)
+        self.interview_table.reset_index(inplace=True)
+        self.interview_table.drop(["index"], axis=1, inplace=True)
+
+        self.interview_table.dropna(subset=["self_development"], axis=0, inplace=True)
+
+        join = pd.merge(self.interview_table, self.candidates_table, how="inner")
 
     def create_benchmarks_table(self):
         pass
@@ -263,6 +366,7 @@ class Transformer:
         self.trainer_table = self.big_table[["trainer"]].copy()
         self.trainer_table = self.trainer_table.rename(columns={"trainer": "Trainer_Name"})
         self.trainer_table = self.trainer_table.drop_duplicates().reset_index(drop=True)
+
 
         self.trainer_table["Trainer_ID"] = self.trainer_table.index.map(lambda x: x + 1)
 
