@@ -37,6 +37,7 @@ class Pipeline:
         for file in self.file_names:
             data_obj = self.client.get_object(Bucket=self.bucket_name, Key=file)["Body"]
             data = loads(data_obj.next())
+            data["date"] = datetime.strptime(data["date"].replace("/", ""), "%d%m%Y").strftime("%Y/%m/%d")
             self.data_array.append(data)
 
         self.dataframe = pd.DataFrame(self.data_array)
@@ -136,6 +137,7 @@ class Pipeline:
         try:
             self.dataframe = pd.read_json(self.local_filename, dtype={"phone_number": str},
                                           convert_dates=["date", "start_date", "invited_date", "dob"])
+
         except FileNotFoundError:
             print(f"{self.local_filename} does not exist in local directory.")
             return None
@@ -209,6 +211,10 @@ class Transformer:
         self._create_big_table()
 
         self.candidates_table = pd.DataFrame()
+        #csv group
+        self.benchmarks_table = pd.DataFrame()
+        self.sparta_day_results_table =pd.DataFrame()
+        self.sparta_day_table = pd.DataFrame()
 
     def remove_duplicates(self,df):
         dup_mask = df.applymap(lambda x: str(x)).duplicated()
@@ -244,7 +250,58 @@ class Transformer:
         pass
 
     def create_benchmarks_table(self):
-        pass
+        self.benchmarks_table = self.big_table[
+            ['candidate_id', 'Analytic_W1', 'Independent_W1', 'Determined_W1', 'Professional_W1', 'Studious_W1',
+             'Imaginative_W1', 'Analytic_W2', 'Independent_W2', 'Determined_W2', 'Professional_W2', 'Studious_W2',
+             'Imaginative_W2', 'Analytic_W3', 'Independent_W3', 'Determined_W3', 'Professional_W3', 'Studious_W3',
+             'Imaginative_W3', 'Analytic_W4', 'Independent_W4', 'Determined_W4', 'Professional_W4', 'Studious_W4',
+             'Imaginative_W4', 'Analytic_W5', 'Independent_W5', 'Determined_W5', 'Professional_W5', 'Studious_W5',
+             'Imaginative_W5', 'Analytic_W6', 'Independent_W6', 'Determined_W6', 'Professional_W6', 'Studious_W6',
+             'Imaginative_W6', 'Analytic_W7', 'Independent_W7', 'Determined_W7', 'Professional_W7', 'Studious_W7',
+             'Imaginative_W7', 'Analytic_W8', 'Independent_W8', 'Determined_W8', 'Professional_W8', 'Studious_W8',
+             'Imaginative_W8', 'Analytic_W9', 'Independent_W9', 'Determined_W9', 'Professional_W9', 'Studious_W9',
+             'Imaginative_W9', 'Analytic_W10', 'Independent_W10', 'Determined_W10', 'Professional_W10', 'Studious_W10',
+             'Imaginative_W10']].copy()
+        self.benchmarks_table.dropna(subset=['Analytic_W1'], inplace=True)
+
+        melt = pd.melt(self.benchmarks_table, id_vars=['candidate_id'])
+        val = melt['variable'].str.split('_')
+        melt['benchmarks'] =val.str.get(0)
+        melt['week'] = val.str.get(1)
+        melt["week"] = melt["week"].map(lambda x: x.replace("W", ""))
+        melt.drop(columns='variable', inplace=True)
+        melt.rename(columns= {"value": "score"}, inplace=True)
+        melt.dropna(subset=["score"], inplace=True)
+        self.benchmarks_table = melt
+        self.benchmarks_table = self.benchmarks_table[['candidate_id','benchmarks', "week", "score"]].copy()
+        # print(melt)
+        self.benchmarks_table['score'] = self.benchmarks_table['score'].astype('int64')
+        print(self.benchmarks_table)
+
+    def create_sparta_day_table(self):
+
+        self.sparta_day_table = self.big_table[['academy', 'invited_date']].copy()
+        self.sparta_day_table['sparta_day_id'] = self.sparta_day_table.index + 1
+        self.sparta_day_table = self.sparta_day_table[['sparta_day_id','academy', 'invited_date']].copy()
+        self.sparta_day_table.dropna(subset=['academy', 'invited_date'], inplace=True)
+        self.sparta_day_table.drop_duplicates(subset=['academy', 'invited_date'], inplace=True)
+        self.sparta_day_table.reset_index()
+
+        print(self.sparta_day_table.head())
+        print(self.sparta_day_table.shape)
+
+
+
+    def create_sparta_day_results_table(self):
+
+        self.sparta_day_results_table = pd.merge(self.big_table[["candidate_id", 'psychometrics_score', 'presentation_score', 'academy', 'invited_date']],
+                                                 self.sparta_day_table, on=['academy','invited_date'], how='left')
+        self.sparta_day_results_table = self.sparta_day_results_table[["candidate_id", 'sparta_day_id', 'psychometrics_score', 'presentation_score']].copy()
+        self.sparta_day_results_table.dropna(subset=['sparta_day_id', 'psychometrics_score', 'presentation_score'], inplace=True)
+        self.sparta_day_results_table['sparta_day_id'] = self.sparta_day_results_table['sparta_day_id'].astype('int64')
+
+        print(self.sparta_day_results_table.head())
+        print(self.sparta_day_results_table.shape)
 
     #More methods...
 
