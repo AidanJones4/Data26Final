@@ -28,6 +28,7 @@ print(txt_pip.dataframe)
 
 
 
+
 transform = Transformer(json_pip.dataframe, csv_talent_pip.dataframe, csv_academy_pip.dataframe, txt_pip.dataframe, "foo.json")
 
 transform.list_attributes()
@@ -48,23 +49,6 @@ print(transform.tech_skills_table)
 print(transform.tech_junction_table)
 print(transform.quality_table)
 print(transform.quality_junction_table)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
