@@ -1,4 +1,4 @@
-{"CANDIDATES":
+{"CANDIDATE":
 
 {"CandidateID": "INT",
 
@@ -11,10 +11,14 @@
  "Email": "VARCHAR(50)",
 
  "Full_Address": "VARCHAR(50)",
+ 
+ "Phone_Number": "INT",
 
  "University": "VARCHAR(50)",
 
  "Degree": "VARCHAR(10)",
+ 
+ "Invited_Date": "Date",
 
  "Invited_By": "VARCHAR(50)",
 
