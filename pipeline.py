@@ -7,6 +7,7 @@ import os
 from datetime import datetime
 from fuzzywuzzy import process
 
+
 class Extractor:
 
     def __init__(self, bucket_name, folder, filetype, local_filename):
@@ -363,7 +364,7 @@ class Transformer:
                     jt_tech_skills.append([each[-2],tech_skills_dict[0][x],y])
         jt_tech_skills_df = pd.DataFrame(jt_tech_skills)
 
-        jt_tech_skills_df.columns = ["candidate_id","skill_id","score"]
+        jt_tech_skills_df.columns = ["candidate_id", "skill_id", "score"]
         self.tech_junction_table = jt_tech_skills_df
 
         self.tech_junction_table.to_json("output_tables/tech_junction_table.json")
