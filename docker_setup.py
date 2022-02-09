@@ -1,3 +1,5 @@
+import os
+
 import pyodbc
 from pprint import pprint as pp
 import json
@@ -20,6 +22,7 @@ class dockerSetUp:
         self.tables = json.load(open('SQL/tables.json')) #Open json file
         self.my_list = []
         self.table_names = list(self.tables.keys())
+        self.df_files = os.listdir("output_tables")
 
     #Output the column names
     def get_column_names(self, table_name):
@@ -52,18 +55,24 @@ class dockerSetUp:
         #print(self.my_list)
         return self.my_list
 
-
     def pandas_to_SQL(self):
+        for table in self.df_files:
+            try:
+                df = pd.read_json(f'output_tables/{table}', dtype={"phone_number": str},
+                                  convert_dates=["date", "start_date", "invited_date","dob", "DoB", "Start_Date", "Invited_Date", "Date"])
+                table_name = table.replace('.json', '')
 
-        data = { 'Candidate_ID': [1,2,3],
-                 'Course_ID': [4,5,6]
-        }
-        df = pd.DataFrame(data)
-        df.reset_index(drop = True, inplace=True)
-        print(df)
-        #for index, row in df.iterrows():
+                for index, row in df.iterrows():
 
-        self.cursor.execute("INSERT INTO CANDIDATE_COURSE_J (Candidate_ID, Course_ID) VALUES(1,2)")
+                    command = f'INSERT INTO {table_name.upper()} VALUES ('
+                    for column in df.keys():
+                        command = command + f"'{row[f'{column}']}',"
+                    command = command[: -1] + ')'
+                    self.cursor.execute(command)
+            except pyodbc.Error as e:
+                print(f"Error {e} table={table},column={column}")
+
+        # self.cursor.execute("INSERT INTO CANDIDATE_COURSE_J (Candidate_ID, Course_ID) VALUES(1,2)")
 
     def close_cursor(self):
         self.cursor.commit()

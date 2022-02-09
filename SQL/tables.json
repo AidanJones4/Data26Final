@@ -12,15 +12,19 @@
 
  "Full_Address": "VARCHAR(50)",
 
+ "Phone_Number": "VARCHAR(50)",
+
  "University": "VARCHAR(50)",
 
- "Degree": "VARCHAR(10)",
+ "Degree": "VARCHAR(50)",
+
+ "Invited_Date": "DATE",
 
  "Invited_By": "VARCHAR(50)",
 
- "Geo_Flex": "VARCHAR(5)",
+ "Geo_Flex": "VARCHAR(50)",
 
- "Course_Interest": "VARCHAR(20)"},
+ "Course_Interest": "VARCHAR(50)"},
 
 
 
@@ -34,7 +38,7 @@
 
  "INTERVIEW_QUALITY_J":
 
-{"Interview_ID":"INT",
+{"Candidate_ID":"INT",
 
 "Quality_ID":"INT"},
 
@@ -58,7 +62,7 @@
 
 "Course_Name":"VARCHAR(50)",
 
-"Course_Date": "DATE"},
+"Start_Date": "DATE"},
 
 
 
@@ -66,7 +70,7 @@
 
  {"Candidate_ID": "INT",
 
- "Benchmarks": "VARCHAR",
+ "Benchmarks": "VARCHAR(50)",
 
  "Week": "INT", "Score": "INT"},
 
@@ -76,9 +80,9 @@
 
  "Sparta_Day_ID": "INT",
 
- "Psychometrics": "VARCHAR",
+ "Psychometrics": "VARCHAR(50)",
 
- "Presentation": "VARCHAR"},
+ "Presentation": "VARCHAR(50)"},
 
 
 
@@ -86,7 +90,7 @@
 
 {"Sparta_Day_ID": "INT",
 
- "Academy_Name": "VARCHAR",
+ "Academy_Name": "VARCHAR(50)",
 
  "Date": "DATE"},
 
@@ -96,7 +100,7 @@
 
  "TECH_SKILL_SCORE_J":
 
-        {"Interview_ID": "INT",
+        {"Candidate_ID": "INT",
 
          "Tech_Skill_ID": "INT",
 
@@ -108,7 +112,7 @@
 
   "INTERVIEW":
 
-        {"Interview_ID": "INT",
+        {
 
          "Candidate_ID": "INT",
 

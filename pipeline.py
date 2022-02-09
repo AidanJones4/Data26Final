@@ -329,8 +329,9 @@ class Transformer:
         self.candidates_table.columns = ["Candidate_ID", "Full_Name", "Gender", "DoB", "Email", "Full_Address",
                                          "Phone_Number", "University", "Degree", "Invited_Date", "Invited_By",
                                          "Geo_Flex", "Course_Interest"]
+        # self.candidates_table["dob"].map(lambda x :np.nan if x.isnull())
 
-        self.candidates_table.to_json("output_tables/candidates_table.json")
+        self.candidates_table.to_json("output_tables/candidates.json")
 
     def create_interview_table(self):
         self.interview_table = self.big_table[["candidate_id", "invited_date", "self_development",
@@ -343,7 +344,7 @@ class Transformer:
         self.interview_table.dropna(subset=["self_development"], axis=0, inplace=True)
         self.interview_table.columns = ["Candidate_ID", "Date", "Self_Development", "Geo_Flex", "Result"]
 
-        self.interview_table.to_json("output_tables/interview_table.json")
+        self.interview_table.to_json("output_tables/interview.json")
 
     def create_tech_skill_tables(self):
         big_table_nonan = self.big_table.dropna(subset=["tech_self_score"])
@@ -372,8 +373,8 @@ class Transformer:
         jt_tech_skills_df.columns = ["Candidate_ID", "Tech_Skill_ID", "Score"]
         self.tech_junction_table = jt_tech_skills_df
 
-        self.tech_junction_table.to_json("output_tables/tech_junction_table.json")
-        self.tech_skills_table.to_json("output_tables/tech_skills_table.json")
+        self.tech_junction_table.to_json("output_tables/tech_skill_score_j.json")
+        self.tech_skills_table.to_json("output_tables/tech_skill.json")
 
     def create_quality_junction(self):
         big_table_nonan = self.big_table.dropna(subset=["qualities"])
@@ -400,14 +401,14 @@ class Transformer:
 
         self.quality_junction_table = jt_qualities_df
 
-        self.quality_junction_table.to_json("output_tables/quality_junction_table.json")
+        self.quality_junction_table.to_json("output_tables/interview_quality_j.json")
 
     def create_quality_table(self):
         strengths = self.attributes["strengths"]
         self.quality_table["is_strength"] = self.quality_table["qualities"].map(lambda x: 1 if x in strengths else 0)
         self.quality_table = self.quality_table[["qualities_id", "qualities", "is_strength"]]
         self.quality_table.columns = ["Quality_ID", "Quality_Name", "is_strength"]
-        self.quality_table.to_json("output_tables/quality_table.json")
+        self.quality_table.to_json("output_tables/quality.json")
 
     def create_benchmarks_table(self):
         self.benchmarks_table = self.big_table[
@@ -438,7 +439,7 @@ class Transformer:
         self.benchmarks_table['score'] = self.benchmarks_table['score'].astype('int64')
         self.benchmarks_table.columns = ["Candidate_ID", "Benchmarks", "Week", "Score"]
 
-        self.benchmarks_table.to_json("output_tables/benchmarks_table.json")
+        self.benchmarks_table.to_json("output_tables/benchmark.json")
 
     def create_sparta_day_table(self):
 
@@ -453,7 +454,7 @@ class Transformer:
         self.sparta_day_table.columns = ["Sparta_Day_ID", "Academy_Name", "Date"]
 
 
-        self.sparta_day_table.to_json("output_tables/sparta_day_table.json")
+        self.sparta_day_table.to_json("output_tables/sparta_day.json")
 
     def create_sparta_day_results_table(self):
 
@@ -467,7 +468,7 @@ class Transformer:
         self.sparta_day_results_table['sparta_day_id'] = self.sparta_day_results_table['sparta_day_id'].astype('int64')
         self.sparta_day_results_table.columns = ["Candidate_ID", "Sparta_Day_ID", "Psychometrics", "Presentation"]
 
-        self.sparta_day_results_table.to_json("output_tables/sparta_day_results_table.json")
+        self.sparta_day_results_table.to_json("output_tables/sparta_day_results.json")
 
     def create_trainer_table(self):
         self.trainer_table = self.big_table[["trainer"]].copy()
@@ -478,7 +479,7 @@ class Transformer:
         self.trainer_table["Trainer_ID"] = self.trainer_table.index.map(lambda x: x + 1)
         self.trainer_table = self.trainer_table[["Trainer_ID", "Trainer_Name"]]
 
-        self.trainer_table.to_json("output_tables/trainer_table.json")
+        self.trainer_table.to_json("output_tables/trainer.json")
 
     def create_course_table(self):
         self.course_table = self.big_table[["course_names", "trainer", "start_date"]].copy()
@@ -492,7 +493,7 @@ class Transformer:
         self.course_table = self.course_table[["Course_ID", "trainer", "Course_Name", "start_date"]]
         self.course_table.columns = ["Course_ID", "Trainer_ID", "Course_Name", "Start_Date"]
 
-        self.course_table.to_json("output_tables/course_table.json")
+        self.course_table.to_json("output_tables/course.json")
 
     def create_candidates_course_j_table(self):
         self.candidates_course_j_table = self.big_table[["candidate_id", "course_names"]].copy()
@@ -504,7 +505,7 @@ class Transformer:
         self.candidates_course_j_table = self.candidates_course_j_table.astype({'course_id': 'int32'})
         self.candidates_course_j_table.columns = ["Candidate_ID", "Course_ID"]
 
-        self.candidates_course_j_table.to_json("output_tables/candidates_course_j_table.json")
+        self.candidates_course_j_table.to_json("output_tables/candidate_course_j.json")
 
     def create_tables(self):
         self.list_attributes()
