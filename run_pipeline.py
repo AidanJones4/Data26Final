@@ -1,6 +1,5 @@
 from pipeline import *
 
-
 # Pandas display settings
 pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', 500)
@@ -28,8 +27,8 @@ print(txt_pip.dataframe)
 
 transform = Transformer(json_pip.dataframe, csv_talent_pip.dataframe, csv_academy_pip.dataframe, txt_pip.dataframe, "foo.json")
 
-transform.create_tables()
 print(transform.big_table)
+transform.create_tables()
 transform.print_tables()
 
 
