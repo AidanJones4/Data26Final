@@ -45,7 +45,7 @@ spartaGlobal = pyodbc.connect(('DRIVER={ODBC Driver 17 for SQL Server};SERVER='+
 
 to connect & use SQL queries in Python
 
-#### CREATE TABLES
+## CREATE TABLES
 
 setUpTable.py can be used to populate this database with tables, using configuration found in tables.json.
 Be aware that running setUpTable.py will drop any tables that currently exist before repopulating.
