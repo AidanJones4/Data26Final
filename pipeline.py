@@ -5,7 +5,7 @@ from bson.json_util import loads
 import json
 import os
 from datetime import datetime
-
+from fuzzywuzzy import process
 
 class Extractor:
 
@@ -194,7 +194,10 @@ class Transformer:
         self.sparta_day = sparta_day
 
         self.big_table = pd.DataFrame()
+        self.misspelled_names = {}
         self._create_big_table()
+        self._create_similar_name_dict()
+        self._update_big_table()
 
         self.attributes = {}
         self.attribute_tables = []
@@ -242,6 +245,47 @@ class Transformer:
         big_table_drop_dupes["qualities"] = big_table_drop_dupes["strengths"] + big_table_drop_dupes["weaknesses"]
 
         self.big_table = big_table_drop_dupes
+
+    def _create_similar_name_dict(self):
+        deduped_names_with_course = []
+        misspelled_names = []
+        dict_of_names = {}
+
+        trainer_table = self.big_table[["trainer", "course_names"]].copy()
+        trainer_table = trainer_table.dropna().drop_duplicates().to_numpy()
+        trainers = self.big_table["trainer"].copy()
+        trainers = trainers.dropna().drop_duplicates().to_numpy()
+
+        for each in trainer_table:
+            each[1] = each[1][:-3]
+        trainer_table = pd.DataFrame(trainer_table)
+        trainer_table.drop_duplicates(inplace=True)
+        trainer_table = trainer_table[0] + "@" + trainer_table[1]
+        trainer_table = trainer_table.to_numpy()
+
+        deduped = list(process.dedupe(trainer_table, threshold=80))
+        for each in deduped:
+            deduped_names_with_course.append(each.split("@"))
+
+        trainer_table = pd.DataFrame(deduped_names_with_course)
+        trainer_table.columns = ["trainer_name", "course_name"]
+        deduped_names = trainer_table["trainer_name"].to_numpy()
+
+        for each in trainers:
+            if each not in deduped_names:
+                misspelled_names.append(each)
+
+        for each in misspelled_names:
+            dict_of_names.update({each: process.extractOne(each, deduped_names)[0]})
+
+        self.misspelled_names = dict_of_names
+
+    def _update_big_table(self):
+        self.big_table["trainer"] = self.big_table["trainer"].map(
+            lambda x: self.misspelled_names[x] if x in self.misspelled_names.keys() else x)
+        big_table_drop_dupes = self.remove_duplicates(self.big_table).copy()
+        self.big_table = big_table_drop_dupes
+
 
     def list_attributes(self):
         """
@@ -415,7 +459,9 @@ class Transformer:
     def create_trainer_table(self):
         self.trainer_table = self.big_table[["trainer"]].copy()
         self.trainer_table = self.trainer_table.rename(columns={"trainer": "Trainer_Name"})
-        self.trainer_table = self.trainer_table.drop_duplicates().reset_index(drop=True)
+
+        self.trainer_table = self.trainer_table.drop_duplicates().dropna().reset_index(drop=True)
+
         self.trainer_table["Trainer_ID"] = self.trainer_table.index.map(lambda x: x + 1)
 
         self.trainer_table.to_json("output_tables/trainer_table.json")
@@ -423,7 +469,7 @@ class Transformer:
     def create_course_table(self):
         self.course_table = self.big_table[["course_names", "trainer"]].copy()
         self.course_table = self.course_table.rename(columns={"course_names": "Course_Names"})
-        self.course_table = self.course_table.drop_duplicates().reset_index(drop=True)
+        self.course_table = self.course_table.drop_duplicates().dropna().reset_index(drop=True)
 
         self.course_table['trainer'] = self.course_table.trainer.replace(
             self.trainer_table.set_index('Trainer_Name')['Trainer_ID'])
@@ -437,6 +483,9 @@ class Transformer:
 
         self.candidates_course_j_table['course_names'] = self.candidates_course_j_table.course_names.replace(
             self.course_table.set_index('Course_Names')['Course_ID'])
+        self.candidates_course_j_table.columns = ["candidate_id", "course_id"]
+        self.candidates_course_j_table.dropna(subset=["course_id"], inplace=True)
+        self.candidates_course_j_table = self.candidates_course_j_table.astype({'course_id': 'int32'})
 
         self.candidates_course_j_table.to_json("output_tables/candidates_course_j_table.json")
 
