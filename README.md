@@ -24,8 +24,7 @@ Open Azure Data Studio and connect to localhost, 1433
 Login details:
 •	Username: SA
 •	Password: Pa55word
-![image](https://user-images.githubusercontent.com/97161073/153217671-e4b42d5f-0abd-48eb-9fb0-0049af300055.png)
-
+![image](https://user-images.githubusercontent.com/97161073/153218018-21ba044a-4ec7-4cad-a3f9-44ea39856cd8.png)
 
 ## CREATE DATABASE
 
