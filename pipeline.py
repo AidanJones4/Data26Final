@@ -114,14 +114,6 @@ class Pipeline:
         self.dataframe.drop(['address', 'city', 'postcode'], axis=1, inplace=True)
         self.dataframe['full_address'] = pd.Series(full_address).map(lambda x: None if x == 'NaN' else x)
 
-    def combine_address_columns(self):
-        address = self.dataframe['address']
-        city = self.dataframe['city']
-        postcode = self.dataframe['postcode']
-        full_address = (address + ', ' + city + ', ' + postcode)
-        self.dataframe.drop(['address', 'city', 'postcode'], axis=1, inplace=True)
-        self.dataframe['full_address'] = pd.Series(full_address).map(lambda x: None if x == 'NaN' else x)
-
     def talent_clean(self):
         self.combine_date_columns()
         self.fix_phone_number()
