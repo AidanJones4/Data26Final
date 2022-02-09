@@ -327,7 +327,7 @@ class Transformer:
                                                      "phone_number", "uni", "degree", "invited_date",
                                                       "geo_flex", "course_interest"]].copy()
 
-        self.candidates_table.to_json("output_tables/candidates_table.json")
+        self.candidates_table.to_json("output_tables/candidate_table.json")
 
     def create_interview_table(self):
         self.interview_table = self.big_table[["candidate_id", "invited_date", "self_development",
@@ -367,8 +367,8 @@ class Transformer:
         jt_tech_skills_df.columns = ["candidate_id", "skill_id", "score"]
         self.tech_junction_table = jt_tech_skills_df
 
-        self.tech_junction_table.to_json("output_tables/tech_junction_table.json")
-        self.tech_skills_table.to_json("output_tables/tech_skills_table.json")
+        self.tech_junction_table.to_json("output_tables/tech_skill_score_j_table.json")
+        self.tech_skills_table.to_json("output_tables/tech_skill_table.json")
 
     def create_quality_junction(self):
         big_table_nonan = self.big_table.dropna(subset=["qualities"])
@@ -395,7 +395,7 @@ class Transformer:
 
         self.quality_junction_table = jt_qualities_df
 
-        self.quality_junction_table.to_json("output_tables/quality_junction_table.json")
+        self.quality_junction_table.to_json("output_tables/interview_quality_j_table.json")
 
     def create_quality_table(self):
         strengths = self.attributes["strengths"]
@@ -488,7 +488,7 @@ class Transformer:
         self.candidates_course_j_table.dropna(subset=["course_id"], inplace=True)
         self.candidates_course_j_table = self.candidates_course_j_table.astype({'course_id': 'int32'})
 
-        self.candidates_course_j_table.to_json("output_tables/candidates_course_j_table.json")
+        self.candidates_course_j_table.to_json("output_tables/candidate_course_j_table.json")
 
     def create_tables(self):
         self.list_attributes()
@@ -508,20 +508,30 @@ class Transformer:
         self.create_candidates_course_j_table()
 
     def print_tables(self):
-        print(self.interview_table)
-        print(self.candidates_table)
-        print(self.tech_skills_table)
-        print(self.tech_junction_table)
-        print(self.quality_table)
-        print(self.quality_junction_table)
-
-        print(self.benchmarks_table)
-        print(self.sparta_day_table)
-        print(self.sparta_day_results_table)
-
-        print(self.trainer_table)
-        print(self.course_table)
-        print(self.candidates_course_j_table)
+        print("\ninterview")
+        print(self.interview_table.head())
+        print("\ncandiate")
+        print(self.candidates_table.head())
+        print("\ntech skills")
+        print(self.tech_skills_table.head())
+        print("\ntech junction")
+        print(self.tech_junction_table.head())
+        print("\nQuality")
+        print(self.quality_table.head())
+        print("\nquality junction")
+        print(self.quality_junction_table.head())
+        print("\nbecnhmark")
+        print(self.benchmarks_table.head())
+        print("\nsparta day")
+        print(self.sparta_day_table.head())
+        print("\nsparta day results")
+        print(self.sparta_day_results_table.head())
+        print("\ntrainer table")
+        print(self.trainer_table.head())
+        print("\ncourse table")
+        print(self.course_table.head())
+        print("\ncandidates course")
+        print(self.candidates_course_j_table.head())
 
     def upload_tables_to_s3(self):
         for file in os.listdir("output_tables"):
