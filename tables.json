@@ -62,7 +62,7 @@
 
 "Course_Name":"VARCHAR(50)",
 
-"Course_Date": "DATE"},
+"Start_Date": "DATE"},
 
 
 
@@ -73,6 +73,7 @@
  "Benchmarks": "VARCHAR",
 
  "Week": "INT", "Score": "INT"},
+ 
 
  "SPARTA_DAY_RESULTS":
 
