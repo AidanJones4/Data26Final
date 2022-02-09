@@ -9,7 +9,7 @@ spartaGlobal = pyodbc.connect(('DRIVER={ODBC Driver 17 for SQL Server};SERVER='+
 
 cursor = spartaGlobal.cursor()
 
-cursor.execute('CREATE TABLE Candidates(CandidateID INT)')
+#cursor.execute('CREATE TABLE Candidates(CandidateID INT)')
 
 tables = json.load(open('SQL/tables.json', encoding = "utf8"))
 
