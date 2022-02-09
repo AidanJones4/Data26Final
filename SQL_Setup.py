@@ -11,7 +11,7 @@ cursor = spartaGlobal.cursor()
 
 cursor.execute('CREATE TABLE Candidates(CandidateID INT)')
 
-tables = json.load(open('tables.json', encoding = "utf8"))
+tables = json.load(open('SQL/tables.json', encoding = "utf8"))
 
 for table in tables.keys():
     print(table)
@@ -21,3 +21,6 @@ for table in tables.keys():
         command += column + ' ' + tables[table][column] + ','
     command = command[: -1] + ')'
     cursor.execute(command)
+
+cursor.commit()
+cursor.close()
