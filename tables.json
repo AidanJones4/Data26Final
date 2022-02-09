@@ -100,7 +100,7 @@
 
  "TECH_SKILL_SCORE_J":
 
-        {"Interview_ID": "INT",
+        {"Candidate_ID": "INT",
 
          "Tech_Skill_ID": "INT",
 
@@ -112,9 +112,7 @@
 
   "INTERVIEW":
 
-        {"Interview_ID": "INT",
-
-         "Candidate_ID": "INT",
+        {"Candidate_ID": "INT",
 
          "Date": "DATE",
 
