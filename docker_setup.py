@@ -69,10 +69,11 @@ class dockerSetUp:
         self.cursor.commit()
         self.cursor.close()
 
-yi = dockerSetUp()
-yi.get_column_names(yi.table_names[0])
-yi.add_table_columns()
-yi.check_table()
-yi.all_tables_upload()
-yi.pandas_to_SQL()
-yi.close_cursor()
+if __name__ == "__main__":
+    yi = dockerSetUp()
+    yi.get_column_names(yi.table_names[0])
+    yi.add_table_columns()
+    yi.check_table()
+    yi.all_tables_upload()
+    yi.pandas_to_SQL()
+    yi.close_cursor()

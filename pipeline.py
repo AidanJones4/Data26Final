@@ -19,9 +19,11 @@ class Extractor:
         self.folder = folder
         self.client = boto3.client("s3")
         self.filetype = filetype
+        self.most_recent_file = 0
         self.file_names = []
         self.data_array = []
         self.local_filename = local_filename
+
         self.dataframe = pd.DataFrame()
 
         self.attributes = {}
