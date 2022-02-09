@@ -25,7 +25,7 @@ Login details:
 •	Username: SA
 •	Password: Pa55word
 
-![image](https://user-images.githubusercontent.com/97161073/153218018-21ba044a-4ec7-4cad-a3f9-44ea39856cd8.png=800x800)
+![image]<img src = "https://user-images.githubusercontent.com/97161073/153218018-21ba044a-4ec7-4cad-a3f9-44ea39856cd8.png" width="800" height="800">
 
 ## CREATE DATABASE
 
