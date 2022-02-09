@@ -213,6 +213,7 @@ class Transformer:
 
         self.benchmarks_table = pd.DataFrame()
         self.sparta_day_table = pd.DataFrame()
+        self.sparta_day_table_merge = pd.DataFrame()
         self.sparta_day_results_table = pd.DataFrame()
 
         self.trainer_table = pd.DataFrame()
@@ -312,7 +313,6 @@ class Transformer:
         return self.attributes
 
     def create_attribute_tables(self):
-
         """
         Crates separate dataframe for columns needing atomizing
         """
@@ -324,8 +324,11 @@ class Transformer:
 
     def create_candidates_table(self):
         self.candidates_table = self.big_table[["candidate_id", "name", "gender", "dob", "email", "full_address",
-                                                     "phone_number", "uni", "degree", "invited_date",
+                                                     "phone_number", "uni", "degree", "invited_date", "invited_by",
                                                       "geo_flex", "course_interest"]].copy()
+        self.candidates_table.columns = ["Candidate_ID", "Full_Name", "Gender", "DoB", "Email", "Full_Address",
+                                         "Phone_Number", "University", "Degree", "Invited_Date", "Invited_By",
+                                         "Geo_Flex", "Course_Interest"]
 
         self.candidates_table.to_json("output_tables/candidates_table.json")
 
@@ -338,6 +341,7 @@ class Transformer:
         self.interview_table.drop(["index"], axis=1, inplace=True)
 
         self.interview_table.dropna(subset=["self_development"], axis=0, inplace=True)
+        self.interview_table.columns = ["Candidate_ID", "Date", "Self_Development", "Geo_Flex", "Result"]
 
         self.interview_table.to_json("output_tables/interview_table.json")
 
@@ -349,7 +353,8 @@ class Transformer:
         tech_skills_df["tech_self_score_id"] = tech_skills_df["tech_self_score_id"].map(lambda x: x+1)
 
         self.tech_skills_table = tech_skills_df.copy()
-        self.tech_skills_table.columns = ["skill_name", "tech_skill_id"]
+        self.tech_skills_table.columns = ["Skill_Name", "Tech_Skill_ID"]
+        self.tech_skills_table = self.tech_skills_table[["Tech_Skill_ID", "Skill_Name"]]
 
         tech_skills_df.index = tech_skills_df["tech_self_score"]
         tech_skills_df.drop(["tech_self_score"], axis=1, inplace=True)
@@ -364,7 +369,7 @@ class Transformer:
                     jt_tech_skills.append([each[-2],tech_skills_dict[0][x],y])
         jt_tech_skills_df = pd.DataFrame(jt_tech_skills)
 
-        jt_tech_skills_df.columns = ["candidate_id", "skill_id", "score"]
+        jt_tech_skills_df.columns = ["Candidate_ID", "Tech_Skill_ID", "Score"]
         self.tech_junction_table = jt_tech_skills_df
 
         self.tech_junction_table.to_json("output_tables/tech_junction_table.json")
@@ -391,7 +396,7 @@ class Transformer:
                 jt_qualities.append([each[-2], quality_dict[0][quality]])
 
         jt_qualities_df = pd.DataFrame(jt_qualities)
-        jt_qualities_df.columns = ["Candidate ID", "Quality ID"]
+        jt_qualities_df.columns = ["Candidate_ID", "Quality_ID"]
 
         self.quality_junction_table = jt_qualities_df
 
@@ -399,8 +404,9 @@ class Transformer:
 
     def create_quality_table(self):
         strengths = self.attributes["strengths"]
-        self.quality_table["is_strengths"] = self.quality_table["qualities"].map(lambda x: 1 if x in strengths else 0)
-
+        self.quality_table["is_strength"] = self.quality_table["qualities"].map(lambda x: 1 if x in strengths else 0)
+        self.quality_table = self.quality_table[["qualities_id", "qualities", "is_strength"]]
+        self.quality_table.columns = ["Quality_ID", "Quality_Name", "is_strength"]
         self.quality_table.to_json("output_tables/quality_table.json")
 
     def create_benchmarks_table(self):
@@ -430,17 +436,22 @@ class Transformer:
         self.benchmarks_table = self.benchmarks_table[['candidate_id', 'benchmarks', "week", "score"]].copy()
         # print(melt)
         self.benchmarks_table['score'] = self.benchmarks_table['score'].astype('int64')
+        self.benchmarks_table.columns = ["Candidate_ID", "Benchmarks", "Week", "Score"]
 
         self.benchmarks_table.to_json("output_tables/benchmarks_table.json")
 
     def create_sparta_day_table(self):
 
         self.sparta_day_table = self.big_table[['academy', 'invited_date']].copy()
-        self.sparta_day_table['sparta_day_id'] = self.sparta_day_table.index + 1
-        self.sparta_day_table = self.sparta_day_table[['sparta_day_id', 'academy', 'invited_date']].copy()
         self.sparta_day_table.dropna(subset=['academy', 'invited_date'], inplace=True)
         self.sparta_day_table.drop_duplicates(subset=['academy', 'invited_date'], inplace=True)
-        self.sparta_day_table.reset_index()
+        self.sparta_day_table.reset_index(inplace=True)
+        self.sparta_day_table.drop("index", axis=1, inplace=True)
+        self.sparta_day_table['sparta_day_id'] = self.sparta_day_table.index + 1
+        self.sparta_day_table_merge = self.sparta_day_table[['sparta_day_id', 'academy', 'invited_date']].copy()
+        self.sparta_day_table = self.sparta_day_table[['sparta_day_id', 'academy', 'invited_date']].copy()
+        self.sparta_day_table.columns = ["Sparta_Day_ID", "Academy_Name", "Date"]
+
 
         self.sparta_day_table.to_json("output_tables/sparta_day_table.json")
 
@@ -448,12 +459,13 @@ class Transformer:
 
         self.sparta_day_results_table = pd.merge(
             self.big_table[["candidate_id", 'psychometrics_score', 'presentation_score', 'academy', 'invited_date']],
-            self.sparta_day_table, on=['academy', 'invited_date'], how='left')
+            self.sparta_day_table_merge, on=['academy', 'invited_date'], how='left')
         self.sparta_day_results_table = self.sparta_day_results_table[
             ["candidate_id", 'sparta_day_id', 'psychometrics_score', 'presentation_score']].copy()
         self.sparta_day_results_table.dropna(subset=['sparta_day_id', 'psychometrics_score', 'presentation_score'],
                                              inplace=True)
         self.sparta_day_results_table['sparta_day_id'] = self.sparta_day_results_table['sparta_day_id'].astype('int64')
+        self.sparta_day_results_table.columns = ["Candidate_ID", "Sparta_Day_ID", "Psychometrics", "Presentation"]
 
         self.sparta_day_results_table.to_json("output_tables/sparta_day_results_table.json")
 
@@ -464,18 +476,21 @@ class Transformer:
         self.trainer_table = self.trainer_table.drop_duplicates().dropna().reset_index(drop=True)
 
         self.trainer_table["Trainer_ID"] = self.trainer_table.index.map(lambda x: x + 1)
+        self.trainer_table = self.trainer_table[["Trainer_ID", "Trainer_Name"]]
 
         self.trainer_table.to_json("output_tables/trainer_table.json")
 
     def create_course_table(self):
-        self.course_table = self.big_table[["course_names", "trainer"]].copy()
-        self.course_table = self.course_table.rename(columns={"course_names": "Course_Names"})
+        self.course_table = self.big_table[["course_names", "trainer", "start_date"]].copy()
+        self.course_table = self.course_table.rename(columns={"course_names": "Course_Name"})
         self.course_table = self.course_table.drop_duplicates().dropna().reset_index(drop=True)
 
         self.course_table['trainer'] = self.course_table.trainer.replace(
             self.trainer_table.set_index('Trainer_Name')['Trainer_ID'])
 
         self.course_table["Course_ID"] = self.course_table.index.map(lambda x: x + 1)
+        self.course_table = self.course_table[["Course_ID", "trainer", "Course_Name", "start_date"]]
+        self.course_table.columns = ["Course_ID", "Trainer_ID", "Course_Name", "Start_Date"]
 
         self.course_table.to_json("output_tables/course_table.json")
 
@@ -483,10 +498,11 @@ class Transformer:
         self.candidates_course_j_table = self.big_table[["candidate_id", "course_names"]].copy()
 
         self.candidates_course_j_table['course_names'] = self.candidates_course_j_table.course_names.replace(
-            self.course_table.set_index('Course_Names')['Course_ID'])
+            self.course_table.set_index('Course_Name')['Course_ID'])
         self.candidates_course_j_table.columns = ["candidate_id", "course_id"]
         self.candidates_course_j_table.dropna(subset=["course_id"], inplace=True)
         self.candidates_course_j_table = self.candidates_course_j_table.astype({'course_id': 'int32'})
+        self.candidates_course_j_table.columns = ["Candidate_ID", "Course_ID"]
 
         self.candidates_course_j_table.to_json("output_tables/candidates_course_j_table.json")
 
@@ -508,20 +524,31 @@ class Transformer:
         self.create_candidates_course_j_table()
 
     def print_tables(self):
-        print(self.interview_table)
-        print(self.candidates_table)
-        print(self.tech_skills_table)
-        print(self.tech_junction_table)
-        print(self.quality_table)
-        print(self.quality_junction_table)
+        print(self.interview_table.head())
+        print("\n\n")
+        print(self.candidates_table.head())
+        print("\n\n")
+        print(self.tech_skills_table.head())
+        print("\n\n")
+        print(self.tech_junction_table.head())
+        print("\n\n")
+        print(self.quality_table.head())
+        print("\n\n")
+        print(self.quality_junction_table.head())
+        print("\n\n")
 
-        print(self.benchmarks_table)
-        print(self.sparta_day_table)
-        print(self.sparta_day_results_table)
+        print(self.benchmarks_table.head())
+        print("\n\n")
+        print(self.sparta_day_table.head())
+        print("\n\n")
+        print(self.sparta_day_results_table.head())
+        print("\n\n")
 
-        print(self.trainer_table)
-        print(self.course_table)
-        print(self.candidates_course_j_table)
+        print(self.trainer_table.head())
+        print("\n\n")
+        print(self.course_table.head())
+        print("\n\n")
+        print(self.candidates_course_j_table.head())
 
     def upload_tables_to_s3(self):
         for file in os.listdir("output_tables"):
