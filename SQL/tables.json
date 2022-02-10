@@ -2,7 +2,7 @@
 
  "CANDIDATES":
 
-{"CandidateID": "INT",
+{"Candidate_ID": "INT",
 
  "Full_Name": "VARCHAR(50)",
 

@@ -34,24 +34,22 @@ transform.name_tables()
 # transform.print_tables()
 # transform.upload_tables_to_s3()
 
-
 yi = dockerSetUp()
-yi.get_column_names(yi.table_names[0])
-yi.add_table_columns()
-yi.check_table()
-yi.all_tables_upload()
 
-yi.pandas_to_SQL(transform.interview,
-                 transform.candidates,
-                 transform.tech_skill,
-                 transform.tech_skill_score_j,
-                 transform.quality,
-                 transform.interview_quality_j,
-                 transform.benchmark,
-                 transform.sparta_day,
-                 transform.sparta_day_results,
-                 transform.trainer,
-                 transform.course,
-                 transform.candidate_course_j)
+df_list = [transform.interview,
+           transform.candidates,
+           transform.tech_skill,
+           transform.tech_skill_score_j,
+           transform.quality,
+           transform.interview_quality_j,
+           transform.benchmark,
+           transform.sparta_day,
+           transform.sparta_day_results,
+           transform.trainer,
+           transform.course,
+           transform.candidate_course_j]
+
+yi.pandas_to_SQL(df_list)
+
 
 yi.close_cursor()
