@@ -1,153 +1,107 @@
 {
-
  "CANDIDATES":
-
-{"Candidate_ID": "INT",
-
+{
+ "Candidate_ID": "INT NOT NULL PRIMARY KEY",
  "Full_Name": "VARCHAR(50)",
-
  "Gender": "VARCHAR(10)",
-
  "DoB": "DATE",
-
  "Email": "VARCHAR(50)",
-
  "Full_Address": "VARCHAR(50)",
-
  "Phone_Number": "VARCHAR(50)",
-
  "University": "VARCHAR(200)",
-
  "Degree": "VARCHAR(10)",
-
  "Invited_Date": "DATE",
-
  "Invited_By": "VARCHAR(50)",
-
  "Geo_Flex": "VARCHAR(5)",
+ "Course_Interest": "VARCHAR(20)"
+},
 
- "Course_Interest": "VARCHAR(20)"},
 
+ "INTERVIEW":
+ {
+  "Candidate_ID": "INT",
+  "Date": "DATE",
+  "Self_Development": "VARCHAR(50)",
+  "Geo_Flex": "VARCHAR(50)",
+  "Result": "VARCHAR(50)"
+ },
 
 
  "TECH_SKILL":
-
-{"Tech_Skill_ID":"INT",
-
- "Skill_Name":"VARCHAR(50)"},
-
-
-
- "INTERVIEW_QUALITY_J":
-
-{"Candidate_ID":"INT",
-
-"Quality_ID":"INT"},
-
+ {
+ "Tech_Skill_ID":"INT NOT NULL PRIMARY KEY",
+ "Skill_Name":"VARCHAR(50)"
+ },
 
 
  "QUALITY":
-
-{"Quality_ID":"INT",
-
-"Quality_Name":"VARCHAR(50)",
-
-"is_strength":"INT"},
-
+ {
+  "Quality_ID":"INT NOT NULL PRIMARY KEY",
+  "Quality_Name":"VARCHAR(50)",
+  "is_strength":"INT"
+ },
 
 
-"COURSE":
-
-{"Course_ID":"INT",
-
-"Trainer_ID":"INT",
-
-"Course_Name":"VARCHAR(50)",
-
-"Start_Date": "DATE"},
-
-
-
- "BENCHMARK":
-
- {"Candidate_ID": "INT",
-
- "Benchmarks": "VARCHAR(50)",
-
- "Week": "INT",
-
-  "Score": "INT"},
-
- "SPARTA_DAY_RESULTS":
-
-{"CANDIDATE_ID": "INT",
-
- "Sparta_Day_ID": "INT",
-
- "Psychometrics": "VARCHAR(50)",
-
- "Presentation": "VARCHAR(50)"},
-
-
-
- "SPARTA_DAY":
-
-{"Sparta_Day_ID": "INT",
-
- "Academy_Name": "VARCHAR(50)",
-
- "Date": "DATE"},
-
-
-
+ "INTERVIEW_QUALITY_J":
+ {
+  "Candidate_ID":"INT",
+  "Quality_ID":"INT"
+ },
 
 
  "TECH_SKILL_SCORE_J":
-
-        {"Candidate_ID": "INT",
-
-         "Tech_Skill_ID": "INT",
-
-         "Score": "INT"
-
-        },
-
-
-
-  "INTERVIEW":
-
-        {
-
-         "Candidate_ID": "INT",
-
-         "Date": "DATE",
-
-         "Self_Development": "VARCHAR(50)",
-
-         "Geo_Flex": "VARCHAR(50)",
-
-         "Result": "VARCHAR(50)"
-
-        },
-
-
-
- "CANDIDATE_COURSE_J":
-
-        {"Candidate_ID": "INT",
-
-         "Course_ID": "INT"
-
-        },
-
+ {"Candidate_ID": "INT",
+  "Tech_Skill_ID": "INT",
+  "Score": "INT"
+ },
 
 
  "TRAINER":
+ {
+  "Trainer_ID": "INT NOT NULL PRIMARY KEY",
+  "Trainer_Name": "VARCHAR(50)"
+ },
 
-        {"Trainer_ID": "INT",
 
-         "Trainer_Name": "VARCHAR(50)"
+"COURSE":
+{
+ "Course_ID":"INT NOT NULL PRIMARY KEY",
+ "Trainer_ID":"INT",
+ "Course_Name":"VARCHAR(50)",
+ "Start_Date": "DATE"
+},
 
-        }
 
+ "CANDIDATE_COURSE_J":
+ {
+  "Candidate_ID": "INT",
+  "Course_ID": "INT"
+ },
+
+
+ "BENCHMARK":
+ {
+  "Candidate_ID": "INT NOT NULL",
+  "Benchmarks": "VARCHAR(50) NOT NULL",
+  "Week": "INT NOT NULL",
+  "Score": "INT",
+  "PRIMARY KEY": " (Candidate_ID, Benchmarks, Week)"
+ },
+
+
+ "SPARTA_DAY":
+ {
+  "Sparta_Day_ID": "INT NOT NULL PRIMARY KEY",
+  "Academy_Name": "VARCHAR(50)",
+  "Date": "DATE"
+ },
+
+
+ "SPARTA_DAY_RESULTS":
+ {
+  "CANDIDATE_ID": "INT",
+  "Sparta_Day_ID": "INT",
+  "Psychometrics": "VARCHAR(50)",
+  "Presentation": "VARCHAR(50)"
+}
 }
