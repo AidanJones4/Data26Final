@@ -35,8 +35,8 @@ class dockerSetUp:
     def add_table_columns(self):
 
         for table in self.tables.keys():
-            self.cursor.execute('DROP TABLE IF EXISTS ' + table) #Drop table if exists
-            command = 'CREATE TABLE ' + table + '(' #SQL query to create table with table columns
+            self.cursor.execute('DROP TABLE IF EXISTS ' + table) # Drop table if exists
+            command = 'CREATE TABLE ' + table + '(' # SQL query to create table with table columns
             for column in self.tables[table].keys():
                 command += column + ' ' + self.tables[table][column] + ','
             command = command[: -1] + ')'

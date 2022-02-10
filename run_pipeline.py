@@ -13,7 +13,7 @@ json_pip.extract()
 
 # print("\n\ncsv Talent Dataframe:")
 csv_talent_pip = Extractor("data-26-final-project-files", "Talent", "csv", "candidate_data.json")
-csv_talent_pip.extract()
+csv_talent_pip.extract(force=True)
 # print(csv_talent_pip.dataframe)
 
 # print("\n\ncsv Academy Dataframe:")

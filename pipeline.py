@@ -15,6 +15,9 @@ class Extractor:
         if not os.path.isdir("extract_files"):
             os.mkdir("extract_files")
 
+        if not os.path.isdir("processed_file_names"):
+            os.mkdir("processed_file_names")
+
         self.bucket_name = bucket_name
         self.folder = folder
         self.client = boto3.client("s3")
@@ -35,6 +38,9 @@ class Extractor:
             for name in page["Contents"]:
                 if name["Key"].startswith(f"{self.folder}/") and name["Key"].endswith(f".{self.filetype}"):
                     self.file_names.append(name["Key"])
+
+        list_pd = pd.Series(self.file_names)
+        list_pd.to_json(f"processed_file_names/processed_{self.filetype}.json")
 
     def json_dataframe(self):
         """
@@ -101,7 +107,10 @@ class Extractor:
     def combine_date_columns(self):
         day = self.dataframe['invited_date'].map(lambda x: str(int(x)), na_action='ignore')
         month_yr = self.dataframe['month'].map(lambda x: x.strip(), na_action='ignore')
-        date = pd.to_datetime(day + month_yr)
+        try:
+            date = pd.to_datetime(day + month_yr)
+        except:
+            pass
         self.dataframe.drop(['invited_date', 'month'], axis=1, inplace=True)
         self.dataframe['invited_date'] = pd.Series(date).map(lambda x: str(x).split(" ")[0].replace("-", "/")).map(
             lambda x: None if x == 'NaT' else x)
@@ -175,6 +184,50 @@ class Extractor:
         self.dataframe = self.dataframe[dup_mask.map(lambda x: not x)]
 
         return dup_rows
+
+
+class ExtractorStream(Extractor):
+
+    def __init__(self, bucket_name, folder, filetype, local_filename):
+        super(ExtractorStream, self).__init__(bucket_name, folder, filetype, local_filename)
+
+    def populate_filenames(self):
+        paginator = self.client.get_paginator("list_objects_v2")
+        pages = paginator.paginate(Bucket=self.bucket_name)
+
+        try:
+            processed_files = list(pd.read_json(f"processed_file_names/processed_{self.filetype}.json", typ="Series"))
+        except ValueError:
+            processed_files = []
+
+        for page in pages:
+            for name in page["Contents"]:
+                if name["Key"].startswith(f"{self.folder}/") and name["Key"].endswith(f".{self.filetype}")\
+                        and name["Key"] not in processed_files:
+                    self.file_names.append(name["Key"])
+
+        new_file_list = pd.Series(processed_files+self.file_names)
+        new_file_list.to_json(f"processed_file_names/processed_{self.filetype}.json")
+
+    def write_data(self):
+        current_data = pd.read_json(f"extract_files/{self.local_filename}", dtype={"phone_number": str},
+                                          convert_dates=["date", "start_date", "invited_date", "dob"])
+        pd.concat([current_data, self.dataframe],axis=0)
+        current_data.to_json(f"extract_files/{self.local_filename}")
+
+    def extract_from_s3(self):
+        self.populate_filenames()
+        print(self.file_names)
+        if self.file_names:
+            print("in here")
+            self.create_dataframe()
+            self.write_data()
+
+    def extract(self):
+        self.extract_from_s3()
+
+    def get_dataframe(self):
+        return self.dataframe
 
 
 class Transformer:
@@ -592,3 +645,46 @@ class Transformer:
             self.client.upload_file(Filename=f"output_tables/{file}", Bucket="data-26-final-project-files",
                                     Key=f"output_tables/{file}")
 
+
+class TransformerStream(Transformer):
+
+    def __init__(self):
+
+        if not os.path.isdir("attributes"):
+            os.mkdir("attributes")
+
+        if not os.path.isdir("output_tables"):
+            os.mkdir("output_tables")
+
+        self.client = boto3.client("s3")
+
+        self.candidates_sparta = pd.read_json("extract_files/candidates_sparta_data.json")
+        self.candidates = pd.read_json("extract_files/candidate_data.json")
+        self.academy = pd.read_json("extract_files/academy_data.json")
+        self.sparta_day = pd.read_json("extract_files/sparta_day_data.json")
+
+        self.big_table = pd.DataFrame()
+        self.misspelled_names = {}
+        self._create_big_table()
+        self._create_similar_name_dict()
+        self._update_big_table()
+
+        self.attributes = {}
+        self.attribute_tables = []
+
+        self.candidates_table = pd.DataFrame()
+        self.interview_table = pd.DataFrame()
+
+        self.tech_skills_table = pd.DataFrame()
+        self.tech_junction_table = pd.DataFrame()
+        self.quality_table = pd.DataFrame()
+        self.quality_junction_table = pd.DataFrame()
+
+        self.benchmarks_table = pd.DataFrame()
+        self.sparta_day_table = pd.DataFrame()
+        self.sparta_day_table_merge = pd.DataFrame()
+        self.sparta_day_results_table = pd.DataFrame()
+
+        self.trainer_table = pd.DataFrame()
+        self.course_table = pd.DataFrame()
+        self.candidates_course_j_table = pd.DataFrame()
