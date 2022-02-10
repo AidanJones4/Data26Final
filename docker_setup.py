@@ -4,6 +4,8 @@ import pyodbc
 from pprint import pprint as pp
 import json
 import pandas as pd
+import sqlalchemy
+import numpy as np
 
 class dockerSetUp:
     """
@@ -18,6 +20,7 @@ class dockerSetUp:
         self.password = 'Pa55word'
         self.docker_data26project = pyodbc.connect('DRIVER={ODBC Driver 17 for SQL Server};SERVER=' + self.server + ';DATABASE=' + self.database + ';UID=' + self.username + ';PWD=' + self.password)  # connecter
         self.cursor = self.docker_data26project.cursor()  # pyodbc.Cursor object
+        self.engine = sqlalchemy.create_engine(f"mssql+pyodbc://{self.username}:{self.password}@localhost:1433/{self.database}?driver=ODBC+Driver+17+for+SQL+Server")
 
         self.tables = json.load(open('SQL/tables.json')) #Open json file
         self.my_list = []
@@ -52,50 +55,37 @@ class dockerSetUp:
             if a.table_name == "trace_xe_action_map":
                 break
             self.my_list.append(a.table_name) # Add table columns to list
-        #print(self.my_list)
         return self.my_list
 
-    def pandas_to_SQL(self):
-        try:
-            for table in self.df_files:
-                df = pd.read_json(f'output_tables/{table}', dtype={"phone_number": str},
-                                  convert_dates=["date", "start_date", "invited_date", "dob", "DoB", "Start_Date",
-                                                 "Invited_Date", "Date"])
-                table_name = table.replace('.json', '')
 
-                for index, row in df.iterrows():
-                    command = f'INSERT INTO {table_name.upper()} VALUES ('
-                    for column in df.keys():
-                        if type(row[f'{column}']) == str:
-                            entry = row[f'{column}'].replace("'", "''")
-                            command = command + f"'{entry}',"
-                        else:
-                            command = command + f"'{row[f'{column}']}',"
-                    command = command[: -1] + ')'
-                    command = command.replace("'NaT'", 'NULL').replace("'None'", 'NULL').replace("'NaN'", 'NULL')
+    def pandas_to_SQL(self, df_list):
+        for df in df_list:
+            df.reset_index(drop=True, inplace=True)
+            print(f"{df.name}")
+            for index, row in df.iterrows():
+                command = f'INSERT INTO {df.name} VALUES ('
+                for column in df.keys():
+                    if type(row[f'{column}']) == str:
+                        entry = row[f'{column}'].replace("'", "''")
+                        command = command + f"'{entry}',"
+                    else:
+                        command = command + f"'{row[f'{column}']}',"
+                command = command[: -1] + ')'
+                command = command.replace("'NaT'", 'NULL').replace("'NaN'", 'NULL').replace("'None'", 'NULL')
 
-                    self.cursor.execute(command)
-                    self.cursor.commit()
-        except pyodbc.Error as e:
-            print(f"{e}, Table={table}")
-        print(f'{table} uploaded to SQL')
+                self.cursor.execute(command)
 
-        # self.cursor.execute("INSERT INTO CANDIDATE_COURSE_J (Candidate_ID, Course_ID) VALUES(1,2)")
 
     def close_cursor(self):
         self.cursor.commit()
         self.cursor.close()
 
 
-pd.set_option('display.max_rows', 500)
-pd.set_option('display.max_columns', 500)
-pd.set_option('display.width', 5000)
+if __name__ == "__main__":
+    yi = dockerSetUp()
+    yi.get_column_names(yi.table_names[0])
+    yi.add_table_columns()
+    yi.check_table()
+    yi.all_tables_upload()
+    yi.close_cursor()
 
-
-yi = dockerSetUp()
-yi.get_column_names(yi.table_names[0])
-yi.add_table_columns()
-yi.check_table()
-yi.all_tables_upload()
-yi.pandas_to_SQL()
-yi.close_cursor()
