@@ -225,8 +225,6 @@ class ExtractorStream(Extractor):
 
     def extract(self):
         self.extract_from_s3()
-
-    def get_dataframe(self):
         return self.dataframe
 
 
@@ -688,3 +686,4 @@ class TransformerStream(Transformer):
         self.trainer_table = pd.DataFrame()
         self.course_table = pd.DataFrame()
         self.candidates_course_j_table = pd.DataFrame()
+        

@@ -13,7 +13,7 @@ json_pip.extract()
 
 # print("\n\ncsv Talent Dataframe:")
 csv_talent_pip = Extractor("data-26-final-project-files", "Talent", "csv", "candidate_data.json")
-csv_talent_pip.extract(force=True)
+csv_talent_pip.extract()
 # print(csv_talent_pip.dataframe)
 
 # print("\n\ncsv Academy Dataframe:")
@@ -53,3 +53,28 @@ yi.pandas_to_SQL(df_list)
 
 
 yi.close_cursor()
+
+"""
+
+
+stream_json = ExtractorStream("data-26-final-project-files", "Talent", "json", "candidates_sparta_data.json")
+
+stream_csv_talent = ExtractorStream("data-26-final-project-files", "Talent", "csv", "candidate_data.json")
+
+stream_csv_academy = ExtractorStream("data-26-final-project-files", "Academy", "csv", "academy_data.json")
+
+stream_txt = ExtractorStream("data-26-final-project-files", "Talent", "txt", "sparta_day_data.json")
+
+transform_stream = TransformerStream()
+while True:
+    json_df = stream_json.extract()
+    csv_talent_df = stream_csv_talent.extract()
+    csv_academy_df = stream_csv_academy.extract()
+    txt_df = stream_txt.extract()
+
+    if json_df or csv_talent_df or csv_academy_df or txt_df:
+        transform_stream.create_tables()
+        
+
+"""
+
