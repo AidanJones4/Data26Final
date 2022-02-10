@@ -1,8 +1,8 @@
 from pipeline import *
-
+from docker_setup import *
 
 # Pandas display settings
-pd.set_option('display.max_rows', 500)
+pd.set_option('display.max_rows', 5000)
 pd.set_option('display.max_columns', 500)
 pd.set_option('display.width', 5000)
 
@@ -30,8 +30,26 @@ transform = Transformer(json_pip.dataframe, csv_talent_pip.dataframe, csv_academ
 
 # print(transform.big_table)
 transform.create_tables()
-transform.print_tables()
-transform.upload_tables_to_s3()
+transform.name_tables()
+# transform.print_tables()
+# transform.upload_tables_to_s3()
+
+yi = dockerSetUp()
+
+df_list = [transform.interview,
+           transform.candidates,
+           transform.tech_skill,
+           transform.tech_skill_score_j,
+           transform.quality,
+           transform.interview_quality_j,
+           transform.benchmark,
+           transform.sparta_day,
+           transform.sparta_day_results,
+           transform.trainer,
+           transform.course,
+           transform.candidate_course_j]
+
+yi.pandas_to_SQL(df_list)
 
 
-
+yi.close_cursor()
