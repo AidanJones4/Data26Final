@@ -15,8 +15,8 @@
  "Geo_Flex": "VARCHAR(5)",
  "Course_Interest": "VARCHAR(20)"
 },
-
-
+  
+  
  "INTERVIEW":
  {
   "Candidate_ID": "INT",

@@ -15,8 +15,10 @@ print(json_pip.dataframe.head())
 # Extract and print the data from the csv files in the Talent folder
 print("\n\ncsv Talent Dataframe:")
 csv_talent_pip = Extractor("data-26-final-project-files", "Talent", "csv", "candidate_data.json")
+
 csv_talent_pip.extract()
 print(csv_talent_pip.dataframe.head())
+
 
 # Extract and print the data from the csv files in the Academy folder
 print("\n\ncsv Academy Dataframe:")

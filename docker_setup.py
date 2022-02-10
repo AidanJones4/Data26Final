@@ -1,4 +1,5 @@
 import os
+
 import pyodbc
 import json
 
@@ -29,8 +30,8 @@ class dockerSetUp:
     def add_table_columns(self):
 
         for table in self.tables.keys():
-            self.cursor.execute('DROP TABLE IF EXISTS ' + table) #Drop table if exists
-            command = 'CREATE TABLE ' + table + '(' #SQL query to create table with table columns
+            self.cursor.execute('DROP TABLE IF EXISTS ' + table) # Drop table if exists
+            command = 'CREATE TABLE ' + table + '(' # SQL query to create table with table columns
             for column in self.tables[table].keys():
                 command += column + ' ' + self.tables[table][column] + ','
             command = command[: -1] + ')'
@@ -51,6 +52,7 @@ class dockerSetUp:
             self.my_list.append(a.table_name) # Add table columns to list
         return self.my_list
 
+
     def pandas_to_SQL(self, df_list):
         for df in df_list:
             df.reset_index(drop=True, inplace=True)
@@ -68,6 +70,7 @@ class dockerSetUp:
 
                 self.cursor.execute(command)
 
+
     def close_cursor(self):
         self.cursor.commit()
         self.cursor.close()
@@ -80,3 +83,4 @@ if __name__ == "__main__":
     yi.check_table()
     yi.all_tables_upload()
     yi.close_cursor()
+
