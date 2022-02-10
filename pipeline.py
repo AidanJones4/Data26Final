@@ -1,5 +1,4 @@
 import boto3
-import numpy as np
 import pandas as pd
 from bson.json_util import loads
 import json
@@ -9,9 +8,18 @@ from fuzzywuzzy import process
 
 
 class Extractor:
-
+    """
+    Extract Phase of the ETL Pipeline
+    """
     def __init__(self, bucket_name, folder, filetype, local_filename):
-
+        """
+        Extract Data from S3 to get it ready for use in the ETL pipeline
+        :param bucket_name: S3 Bucket Name
+        :param folder: S3 Folder that data is stored in
+        :param filetype: Type of file we are looking for
+        :param local_filename: Name that data will be saved under in local directory
+        """
+        # Check if the path extract_files exists and if it doesn't it is created
         if not os.path.isdir("extract_files"):
             os.mkdir("extract_files")
 
@@ -32,6 +40,9 @@ class Extractor:
 
     # Extract Methods
     def populate_filenames(self):
+        """
+        Create a list of filenames on S3 that we want to extract from S3
+        """
         paginator = self.client.get_paginator("list_objects_v2")
         pages = paginator.paginate(Bucket=self.bucket_name)
         for page in pages:
@@ -76,6 +87,9 @@ class Extractor:
             self.dataframe['course_names'] = pd.Series(course_names)
 
     def txt_dataframe(self):
+        """
+        Create a dataframe from all the txt files
+        """
         # loop through all file names
         for file in self.file_names:
             # get data, split into lines
@@ -105,6 +119,9 @@ class Extractor:
         self.dataframe = pd.DataFrame(data=self.data_array)
 
     def combine_date_columns(self):
+        """
+        Combine columns that all refer to date into one date column
+        """
         day = self.dataframe['invited_date'].map(lambda x: str(int(x)), na_action='ignore')
         month_yr = self.dataframe['month'].map(lambda x: x.strip(), na_action='ignore')
         try:
@@ -116,11 +133,17 @@ class Extractor:
             lambda x: None if x == 'NaT' else x)
 
     def fix_phone_number(self):
+        """
+        Make the format of all phone numbers the same
+        """
         self.dataframe['phone_number'] = self.dataframe['phone_number'].map(lambda x: str(
             "".join(x.replace("  ", "").replace("-", "").replace(" ", "").replace("(", " ").replace(")", "").split())),
                                                                             na_action='ignore')
 
     def combine_address_columns(self):
+        """
+        Combine all columns relating to address into one address columns
+        """
         address = self.dataframe['address']
         city = self.dataframe['city']
         postcode = self.dataframe['postcode']
@@ -129,13 +152,18 @@ class Extractor:
         self.dataframe['full_address'] = pd.Series(full_address).map(lambda x: None if x == 'NaN' else x)
 
     def talent_clean(self):
+        """
+        Runs the functions above to clean the dataframe
+        """
         self.combine_date_columns()
         self.fix_phone_number()
         self.combine_address_columns()
         self.dataframe.drop(["id"], axis=1, inplace=True)
 
     def create_dataframe(self):
-
+        """
+        Check for file type and then assign to the corresponding function to get dataframes.
+        """
         if self.filetype == "json":
             self.json_dataframe()
 
@@ -148,9 +176,15 @@ class Extractor:
             self.txt_dataframe()
 
     def write_data(self):
+        """
+        Create local jsons of the data in dataframe
+        """
         self.dataframe.to_json(f"extract_files/{self.local_filename}")
 
     def load_local_dataframe(self):
+        """
+        Load dataframe if it is already available locally rather than checking S3 everytime
+        """
         try:
             self.dataframe = pd.read_json(f"extract_files/{self.local_filename}", dtype={"phone_number": str},
                                           convert_dates=["date", "start_date", "invited_date", "dob"])
@@ -159,11 +193,19 @@ class Extractor:
             return None
 
     def extract_from_s3(self):
+        """
+        Run functions that would extract data from S3
+        """
         self.populate_filenames()
         self.create_dataframe()
         self.write_data()
 
     def extract(self, force=False):
+        """
+        Extract data from local files unless instructed to load from S3 bucket.
+        :param force: Bool to choose whether to extract from S3 or check for local data (Used during testing)
+        :return:
+        """
         try:
             if os.stat(f"extract_files/{self.local_filename}").st_size == 0 or force:
                 self.extract_from_s3()
@@ -172,18 +214,6 @@ class Extractor:
         except FileNotFoundError:
             self.extract_from_s3()
             self.load_local_dataframe()
-
-    # Transform Methods
-
-    def remove_duplicates(self):
-        if self.dataframe.empty:
-            self.load_local_dataframe()
-
-        dup_mask = self.dataframe.applymap(lambda x: str(x)).duplicated()
-        dup_rows = self.dataframe[dup_mask]
-        self.dataframe = self.dataframe[dup_mask.map(lambda x: not x)]
-
-        return dup_rows
 
 
 class ExtractorStream(Extractor):
@@ -231,9 +261,17 @@ class ExtractorStream(Extractor):
 
 
 class Transformer:
-
+    """
+    Transform Phase of the ETL Pipeline
+    """
     def __init__(self, candidates_sparta, candidates, academy, sparta_day):
-
+        """
+        Loads in the data from S3 to be transformed into some normalised dataframes ready for upload to SQL Server
+        :param candidates_sparta: JSON Data
+        :param candidates: CSV Talent Data
+        :param academy: CSV Academy Data
+        :param sparta_day: TXT Data
+        """
         if not os.path.isdir("attributes"):
             os.mkdir("attributes")
 
@@ -274,10 +312,18 @@ class Transformer:
         self.candidate_course_j = pd.DataFrame()
 
     def remove_duplicates(self, df):
+        """
+        Remove duplicates from a dataframe
+        :param df: Dataframe to remove duplicates from
+        :return: The new dataframe without duplicates
+        """
         dup_mask = df.applymap(lambda x: str(x)).duplicated()
         return df[dup_mask.map(lambda x: not x)]
 
     def _create_big_table(self):
+        """
+        Combines all the data from all the files on S3 into one giant table.
+        """
         self.candidates_sparta.rename(columns={'date': 'invited_date'}, inplace=True)
         self.sparta_day.rename(columns={'date': 'invited_date'}, inplace=True)
 
@@ -296,12 +342,15 @@ class Transformer:
         big_table_drop_dupes = self.remove_duplicates(big_table).copy()
         big_table_drop_dupes.reset_index(inplace=True)
         big_table_drop_dupes.drop("index", axis=1, inplace=True)
-        big_table_drop_dupes["candidate_id"] = big_table_drop_dupes.index.map(lambda x: x + 10001)
         big_table_drop_dupes["qualities"] = big_table_drop_dupes["strengths"] + big_table_drop_dupes["weaknesses"]
 
         self.big_table = big_table_drop_dupes
 
     def _create_similar_name_dict(self):
+        """
+        Uses a library called fuzzywuzzy to compare names in a Series to find minor spelling mistakes in names
+        and creates a dictionary of {"misspelled name": "correct name"} to be used later to fix the spelling mistakes.
+        """
         deduped_names_with_course = []
         misspelled_names = []
         dict_of_names = {}
@@ -336,11 +385,17 @@ class Transformer:
         self.misspelled_names = dict_of_names
 
     def _update_big_table(self):
+        """
+        Updates the big table by replacing misspelled names with names found using a similarity score of >80%
+        and removing duplicates as well as merging rows with the same name and email.
+        """
         self.big_table["trainer"] = self.big_table["trainer"].map(
             lambda x: self.misspelled_names[x] if x in self.misspelled_names.keys() else x)
         big_table_drop_dupes = self.remove_duplicates(self.big_table).copy()
         column_names = list(big_table_drop_dupes.columns)
         big_table_drop_dupes = big_table_drop_dupes.groupby(['name', 'email'], as_index=False).last()
+        big_table_drop_dupes["candidate_id"] = big_table_drop_dupes.index.map(lambda x: x + 10001)
+        column_names.insert(-1, "candidate_id")
         big_table_drop_dupes = big_table_drop_dupes[column_names]
         self.big_table = big_table_drop_dupes
 
@@ -378,6 +433,9 @@ class Transformer:
             self.attribute_tables.append(attribute_dataframe)
 
     def create_candidates_table(self):
+        """
+        Create the Candidate Table
+        """
         self.candidates = self.big_table[["candidate_id", "name", "gender", "dob", "email", "full_address",
                                                      "phone_number", "uni", "degree", "invited_date", "invited_by",
                                                       "geo_flex", "course_interest"]].copy()
@@ -390,6 +448,9 @@ class Transformer:
 
 
     def create_interview_table(self):
+        """
+        Create the Interview Table
+        """
         self.interview = self.big_table[["candidate_id", "invited_date", "self_development",
                                                "geo_flex", "result"]].copy()
         self.interview.dropna(axis=0, subset=["invited_date", "self_development",
@@ -405,6 +466,9 @@ class Transformer:
 
 
     def create_tech_skill_tables(self):
+        """
+        Create both the Tech Skill and Tech Skill Junction Tables
+        """
         big_table_nonan = self.big_table.dropna(subset=["tech_self_score"])
         big_table_numpy = big_table_nonan.to_numpy()
 
@@ -437,6 +501,9 @@ class Transformer:
 
 
     def create_quality_junction(self):
+        """
+        Create the Quality Junction Table
+        """
         big_table_nonan = self.big_table.dropna(subset=["qualities"])
         qualities_df = pd.read_json("attributes/qualities.json")
         self.quality = qualities_df.copy()
@@ -464,6 +531,9 @@ class Transformer:
         self.interview_quality_j.to_json("output_tables/interview_quality_j.json")
 
     def create_quality_table(self):
+        """
+        Create the Quality Table
+        """
         strengths = self.attributes["strengths"]
         self.quality["is_strength"] = self.quality["qualities"].map(lambda x: 1 if x in strengths else 0)
         self.quality = self.quality[["qualities_id", "qualities", "is_strength"]]
@@ -474,6 +544,9 @@ class Transformer:
 
 
     def create_benchmarks_table(self):
+        """
+        Create the Benchmark Table
+        """
         self.benchmark = self.big_table[
             ['candidate_id', 'Analytic_W1', 'Independent_W1', 'Determined_W1', 'Professional_W1', 'Studious_W1',
              'Imaginative_W1', 'Analytic_W2', 'Independent_W2', 'Determined_W2', 'Professional_W2', 'Studious_W2',
@@ -506,7 +579,9 @@ class Transformer:
 
 
     def create_sparta_day_table(self):
-
+        """
+        Create the Sparta Day Table
+        """
         self.sparta_day = self.big_table[['academy', 'invited_date']].copy()
         self.sparta_day.dropna(subset=['academy', 'invited_date'], inplace=True)
         self.sparta_day.drop_duplicates(subset=['academy', 'invited_date'], inplace=True)
@@ -522,7 +597,9 @@ class Transformer:
 
 
     def create_sparta_day_results_table(self):
-
+        """
+        Create the Sparta Day Results Table
+        """
         self.sparta_day_results = pd.merge(
             self.big_table[["candidate_id", 'psychometrics_score', 'presentation_score', 'academy', 'invited_date']],
             self.sparta_day_table_merge, on=['academy', 'invited_date'], how='left')
@@ -538,6 +615,9 @@ class Transformer:
 
 
     def create_trainer_table(self):
+        """
+        Create the Trainer Table
+        """
         self.trainer = self.big_table[["trainer"]].copy()
         self.trainer = self.trainer.rename(columns={"trainer": "Trainer_Name"})
 
@@ -551,6 +631,9 @@ class Transformer:
 
 
     def create_course_table(self):
+        """
+        Create the Course Table
+        """
         self.course = self.big_table[["course_names", "trainer", "start_date"]].copy()
         self.course = self.course.rename(columns={"course_names": "Course_Name"})
         self.course = self.course.drop_duplicates().dropna().reset_index(drop=True)
@@ -567,6 +650,9 @@ class Transformer:
 
 
     def create_candidates_course_j_table(self):
+        """
+        Create the Candidates Course Junction table
+        """
         self.candidate_course_j = self.big_table[["candidate_id", "course_names"]].copy()
 
         self.candidate_course_j['course_names'] = self.candidate_course_j.course_names.replace(
@@ -581,6 +667,9 @@ class Transformer:
 
 
     def create_tables(self):
+        """
+        Creates all the dataframes referenced from the ERD
+        """
         self.list_attributes()
         self.create_attribute_tables()
         self.create_candidates_table()
@@ -598,6 +687,9 @@ class Transformer:
         self.create_candidates_course_j_table()
 
     def name_tables(self):
+        """
+        Assign a name to each dataframe to be used for uploading to SQL later
+        """
         self.candidates.name = "CANDIDATES"
         self.interview.name = "INTERVIEW"
         self.tech_skill.name = "TECH_SKILL"
@@ -612,6 +704,10 @@ class Transformer:
         self.candidate_course_j.name = "CANDIDATE_COURSE_J"
 
     def print_tables(self):
+
+        """
+        Print all the dataframes from the class object with 2 lines separating each dataframe
+        """
 
         print(self.interview.head())
         print("\n\n")
@@ -640,7 +736,27 @@ class Transformer:
         print("\n\n")
         print(self.candidate_course_j.head())
 
+    def list_tables(self):
+        """
+        :return: Returns a list of all the dataframes created in the class
+        """
+        return [self.interview,
+                self.candidates,
+                self.tech_skill,
+                self.tech_skill_score_j,
+                self.quality,
+                self.interview_quality_j,
+                self.benchmark,
+                self.sparta_day,
+                self.sparta_day_results,
+                self.trainer,
+                self.course,
+                self.candidate_course_j]
+
     def upload_tables_to_s3(self):
+        """
+        Take the dataframes output as json files and upload them to our s3 bucket
+        """
         for file in os.listdir("output_tables"):
             self.client.upload_file(Filename=f"output_tables/{file}", Bucket="data-26-final-project-files",
                                     Key=f"output_tables/{file}")
