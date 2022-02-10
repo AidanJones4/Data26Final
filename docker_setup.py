@@ -56,27 +56,41 @@ class dockerSetUp:
         return self.my_list
 
     def pandas_to_SQL(self):
-        for table in self.df_files:
-            try:
+        try:
+            for table in self.df_files:
                 df = pd.read_json(f'output_tables/{table}', dtype={"phone_number": str},
-                                  convert_dates=["date", "start_date", "invited_date","dob", "DoB", "Start_Date", "Invited_Date", "Date"])
+                                  convert_dates=["date", "start_date", "invited_date", "dob", "DoB", "Start_Date",
+                                                 "Invited_Date", "Date"])
                 table_name = table.replace('.json', '')
 
                 for index, row in df.iterrows():
-
                     command = f'INSERT INTO {table_name.upper()} VALUES ('
                     for column in df.keys():
-                        command = command + f"'{row[f'{column}']}',"
+                        if type(row[f'{column}']) == str:
+                            entry = row[f'{column}'].replace("'", "''")
+                            command = command + f"'{entry}',"
+                        else:
+                            command = command + f"'{row[f'{column}']}',"
                     command = command[: -1] + ')'
+                    command = command.replace("'NaT'", 'NULL').replace("'None'", 'NULL').replace("'NaN'", 'NULL')
+
                     self.cursor.execute(command)
-            except pyodbc.Error as e:
-                print(f"Error {e} table={table},column={column}")
+                    self.cursor.commit()
+        except pyodbc.Error as e:
+            print(f"{e}, Table={table}")
+        print(f'{table} uploaded to SQL')
 
         # self.cursor.execute("INSERT INTO CANDIDATE_COURSE_J (Candidate_ID, Course_ID) VALUES(1,2)")
 
     def close_cursor(self):
         self.cursor.commit()
         self.cursor.close()
+
+
+pd.set_option('display.max_rows', 500)
+pd.set_option('display.max_columns', 500)
+pd.set_option('display.width', 5000)
+
 
 yi = dockerSetUp()
 yi.get_column_names(yi.table_names[0])

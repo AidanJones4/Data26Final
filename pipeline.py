@@ -525,9 +525,11 @@ class Transformer:
         self.create_candidates_course_j_table()
 
     def print_tables(self):
-        print(self.interview_table.head())
+        print(self.interview_table.head(2))
         print("\n\n")
         print(self.candidates_table.head())
+        # print("Candidate error checking")
+        # print(self.candidates_table['Course_Interest'].isnull().sum())
         print("\n\n")
         print(self.tech_skills_table.head())
         print("\n\n")
