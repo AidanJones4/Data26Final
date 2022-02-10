@@ -16,7 +16,7 @@ print(json_pip.dataframe.head())
 print("\n\ncsv Talent Dataframe:")
 csv_talent_pip = Extractor("data-26-final-project-files", "Talent", "csv", "candidate_data.json")
 
-csv_talent_pip.extract()
+csv_talent_pip.extract(force=True)
 print(csv_talent_pip.dataframe.head())
 
 
