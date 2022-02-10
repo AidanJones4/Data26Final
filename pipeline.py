@@ -15,6 +15,9 @@ class Extractor:
         if not os.path.isdir("extract_files"):
             os.mkdir("extract_files")
 
+        if not os.path.isdir("processed_file_names"):
+            os.mkdir("processed_file_names")
+
         self.bucket_name = bucket_name
         self.folder = folder
         self.client = boto3.client("s3")
@@ -35,6 +38,9 @@ class Extractor:
             for name in page["Contents"]:
                 if name["Key"].startswith(f"{self.folder}/") and name["Key"].endswith(f".{self.filetype}"):
                     self.file_names.append(name["Key"])
+
+        list_pd = pd.Series(self.file_names)
+        list_pd.to_json(f"processed_file_names/processed_{self.filetype}.json")
 
     def json_dataframe(self):
         """
@@ -101,7 +107,10 @@ class Extractor:
     def combine_date_columns(self):
         day = self.dataframe['invited_date'].map(lambda x: str(int(x)), na_action='ignore')
         month_yr = self.dataframe['month'].map(lambda x: x.strip(), na_action='ignore')
-        date = pd.to_datetime(day + month_yr)
+        try:
+            date = pd.to_datetime(day + month_yr)
+        except:
+            pass
         self.dataframe.drop(['invited_date', 'month'], axis=1, inplace=True)
         self.dataframe['invited_date'] = pd.Series(date).map(lambda x: str(x).split(" ")[0].replace("-", "/")).map(
             lambda x: None if x == 'NaT' else x)
@@ -175,6 +184,39 @@ class Extractor:
         self.dataframe = self.dataframe[dup_mask.map(lambda x: not x)]
 
         return dup_rows
+
+
+class ExtractorStream(Extractor):
+
+    def __init__(self, bucket_name, folder, filetype, local_filename):
+        super(ExtractorStream, self).__init__(bucket_name, folder, filetype, local_filename)
+
+    def populate_filenames(self):
+        paginator = self.client.get_paginator("list_objects_v2")
+        pages = paginator.paginate(Bucket=self.bucket_name)
+
+        processed_file_names = list(pd.read_json(f"processed_file_names/processed_{self.filetype}.json", typ="Series"))
+        print(processed_file_names)
+
+        for page in pages:
+            for name in page["Contents"]:
+                if name["Key"].startswith(f"{self.folder}/") and name["Key"].endswith(f".{self.filetype}")\
+                        and name["Key"] not in processed_file_names:
+                    self.file_names.append(name["Key"])
+
+    def write_json(self):
+        current_data = pd.read_json(f"extract_files/{self.local_filename}.json")
+        current_data.update(self.dataframe)
+        current_data.to_json(f"extract_files/{self.local_filename}.json")
+
+    def extract(self):
+        self.extract_from_s3()
+
+
+
+
+
+
 
 
 class Transformer:

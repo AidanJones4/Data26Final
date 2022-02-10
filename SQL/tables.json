@@ -70,6 +70,7 @@
 
  "Week": "INT", "Score": "INT"},
 
+
  "SPARTA_DAY_RESULTS":
 
 {"CANDIDATE_ID": "INT",
