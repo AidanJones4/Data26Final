@@ -124,10 +124,8 @@ class Extractor:
         """
         day = self.dataframe['invited_date'].map(lambda x: str(int(x)), na_action='ignore')
         month_yr = self.dataframe['month'].map(lambda x: x.strip(), na_action='ignore')
-        try:
-            date = pd.to_datetime(day + month_yr)
-        except:
-            pass
+        date = pd.to_datetime(day + month_yr)
+
         self.dataframe.drop(['invited_date', 'month'], axis=1, inplace=True)
         self.dataframe['invited_date'] = pd.Series(date).map(lambda x: str(x).split(" ")[0].replace("-", "/")).map(
             lambda x: None if x == 'NaT' else x)
@@ -136,19 +134,27 @@ class Extractor:
         """
         Make the format of all phone numbers the same
         """
+        # Remove spaces, double spaces, hyphens and brackets
         self.dataframe['phone_number'] = self.dataframe['phone_number'].map(lambda x: str(
             "".join(x.replace("  ", "").replace("-", "").replace(" ", "").replace("(", " ").replace(")", "").split())),
                                                                             na_action='ignore')
 
     def combine_address_columns(self):
         """
-        Combine all columns relating to address into one address columns
+        Combine all columns relating to address into one address column
         """
+        # Retrieve current address, city and postcode columns
         address = self.dataframe['address']
         city = self.dataframe['city']
         postcode = self.dataframe['postcode']
+
+        # Combine into full address
         full_address = (address + ', ' + city + ', ' + postcode)
+
+        # Drop old columns
         self.dataframe.drop(['address', 'city', 'postcode'], axis=1, inplace=True)
+
+        # Insert new full address column into dataframe
         self.dataframe['full_address'] = pd.Series(full_address).map(lambda x: None if x == 'NaN' else x)
 
     def talent_clean(self):
@@ -164,11 +170,14 @@ class Extractor:
         """
         Check for file type and then assign to the corresponding function to get dataframes.
         """
+
         if self.filetype == "json":
             self.json_dataframe()
 
         elif self.filetype == "csv":
             self.csv_dataframe()
+
+            # Runs a cleaning method if the csv files come from 'Talent' folder
             if self.folder == "Talent":
                 self.talent_clean()
 
@@ -280,13 +289,16 @@ class Transformer:
 
         self.client = boto3.client("s3")
 
+        # Input data from Extractor instances
         self.candidates_sparta = candidates_sparta
         self.candidates = candidates
         self.academy = academy
         self.sparta_day = sparta_day
 
-        self.big_table = pd.DataFrame()
+        self.big_table = pd.DataFrame() # Placeholder for resulting table from merging all input tables
         self.misspelled_names = {}
+
+        # Methods that run on initialization of Transformer class creating cleaned fully merged table
         self._create_big_table()
         self._create_similar_name_dict()
         self._update_big_table()
@@ -294,19 +306,17 @@ class Transformer:
         self.attributes = {}
         self.attribute_tables = []
 
+        # Placeholder output tables
         self.candidates = pd.DataFrame()
         self.interview = pd.DataFrame()
-
         self.tech_skill = pd.DataFrame()
         self.tech_skill_score_j = pd.DataFrame()
         self.quality = pd.DataFrame()
         self.interview_quality_j = pd.DataFrame()
-
         self.benchmark = pd.DataFrame()
         self.sparta_day = pd.DataFrame()
         self.sparta_day_table_merge = pd.DataFrame()
         self.sparta_day_results = pd.DataFrame()
-
         self.trainer = pd.DataFrame()
         self.course = pd.DataFrame()
         self.candidate_course_j = pd.DataFrame()
@@ -327,11 +337,13 @@ class Transformer:
         self.candidates_sparta.rename(columns={'date': 'invited_date'}, inplace=True)
         self.sparta_day.rename(columns={'date': 'invited_date'}, inplace=True)
 
+        # Put all name columns into title format
         self.candidates_sparta["name"] = self.candidates_sparta["name"].str.title()
         self.candidates["name"] = self.candidates["name"].str.title()
         self.academy["name"] = self.academy["name"].str.title()
         self.sparta_day["name"] = self.sparta_day["name"].str.title()
 
+        # Merge columns on candidate name and invited date
         big_table = pd.merge(self.candidates_sparta, self.candidates,
                              on=["name", "invited_date"], how='outer')
         big_table = pd.merge(big_table, self.academy,
@@ -339,6 +351,7 @@ class Transformer:
         big_table = pd.merge(big_table, self.sparta_day,
                              on=["name", "invited_date"], how='outer')
 
+        # Remove columns
         big_table_drop_dupes = self.remove_duplicates(big_table).copy()
         big_table_drop_dupes.reset_index(inplace=True)
         big_table_drop_dupes.drop("index", axis=1, inplace=True)
