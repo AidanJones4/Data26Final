@@ -4,8 +4,8 @@ import pyodbc
 from pprint import pprint as pp
 import json
 import pandas as pd
-import sqlalchemy
 import numpy as np
+
 
 class dockerSetUp:
     """
@@ -20,7 +20,6 @@ class dockerSetUp:
         self.password = 'Pa55word'
         self.docker_data26project = pyodbc.connect('DRIVER={ODBC Driver 17 for SQL Server};SERVER=' + self.server + ';DATABASE=' + self.database + ';UID=' + self.username + ';PWD=' + self.password)  # connecter
         self.cursor = self.docker_data26project.cursor()  # pyodbc.Cursor object
-        self.engine = sqlalchemy.create_engine(f"mssql+pyodbc://{self.username}:{self.password}@localhost:1433/{self.database}?driver=ODBC+Driver+17+for+SQL+Server")
 
         self.tables = json.load(open('SQL/tables.json')) #Open json file
         self.my_list = []

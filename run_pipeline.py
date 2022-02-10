@@ -31,6 +31,7 @@ transform = Transformer(json_pip.dataframe, csv_talent_pip.dataframe, csv_academ
 # print(transform.big_table)
 transform.create_tables()
 transform.name_tables()
+
 # transform.print_tables()
 # transform.upload_tables_to_s3()
 
