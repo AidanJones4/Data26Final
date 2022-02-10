@@ -1,4 +1,5 @@
 import os
+
 import pyodbc
 from pprint import pprint as pp
 import json
@@ -56,6 +57,7 @@ class dockerSetUp:
             self.my_list.append(a.table_name) # Add table columns to list
         return self.my_list
 
+
     def pandas_to_SQL(self, df_list):
         for df in df_list:
             df.reset_index(drop=True, inplace=True)
@@ -73,6 +75,7 @@ class dockerSetUp:
 
                 self.cursor.execute(command)
 
+
     def close_cursor(self):
         self.cursor.commit()
         self.cursor.close()
@@ -85,3 +88,4 @@ if __name__ == "__main__":
     yi.check_table()
     yi.all_tables_upload()
     yi.close_cursor()
+

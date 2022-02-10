@@ -331,8 +331,10 @@ class Transformer:
         self.candidates.columns = ["Candidate_ID", "Full_Name", "Gender", "DoB", "Email", "Full_Address",
                                          "Phone_Number", "University", "Degree", "Invited_Date", "Invited_By",
                                          "Geo_Flex", "Course_Interest"]
+        # self.candidates_table["dob"].map(lambda x :np.nan if x.isnull())
 
         self.candidates.to_json("output_tables/candidates.json")
+
 
     def create_interview_table(self):
         self.interview = self.big_table[["candidate_id", "invited_date", "self_development",
@@ -345,7 +347,9 @@ class Transformer:
         self.interview.dropna(subset=["self_development"], axis=0, inplace=True)
         self.interview.columns = ["Candidate_ID", "Date", "Self_Development", "Geo_Flex", "Result"]
 
+
         self.interview.to_json("output_tables/interview.json")
+
 
     def create_tech_skill_tables(self):
         big_table_nonan = self.big_table.dropna(subset=["tech_self_score"])
@@ -374,8 +378,10 @@ class Transformer:
         jt_tech_skills_df.columns = ["Candidate_ID", "Tech_Skill_ID", "Score"]
         self.tech_skill_score_j = jt_tech_skills_df
 
+
         self.tech_skill_score_j.to_json("output_tables/tech_skill_score_j.json")
         self.tech_skill.to_json("output_tables/tech_skill.json")
+
 
     def create_quality_junction(self):
         big_table_nonan = self.big_table.dropna(subset=["qualities"])
@@ -413,6 +419,7 @@ class Transformer:
 
         self.quality.to_json("output_tables/quality.json")
 
+
     def create_benchmarks_table(self):
         self.benchmark = self.big_table[
             ['candidate_id', 'Analytic_W1', 'Independent_W1', 'Determined_W1', 'Professional_W1', 'Studious_W1',
@@ -441,7 +448,9 @@ class Transformer:
         self.benchmark['score'] = self.benchmark['score'].astype('int64')
         self.benchmark.columns = ["Candidate_ID", "Benchmarks", "Week", "Score"]
 
+
         self.benchmark.to_json("output_tables/benchmark.json")
+
 
     def create_sparta_day_table(self):
 
@@ -455,7 +464,9 @@ class Transformer:
         self.sparta_day = self.sparta_day[['sparta_day_id', 'academy', 'invited_date']].copy()
         self.sparta_day.columns = ["Sparta_Day_ID", "Academy_Name", "Date"]
 
+
         self.sparta_day.to_json("output_tables/sparta_day.json")
+
 
     def create_sparta_day_results_table(self):
 
@@ -469,7 +480,9 @@ class Transformer:
         self.sparta_day_results['sparta_day_id'] = self.sparta_day_results['sparta_day_id'].astype('int64')
         self.sparta_day_results.columns = ["Candidate_ID", "Sparta_Day_ID", "Psychometrics", "Presentation"]
 
+
         self.sparta_day_results.to_json("output_tables/sparta_day_results.json")
+
 
     def create_trainer_table(self):
         self.trainer = self.big_table[["trainer"]].copy()
@@ -480,7 +493,9 @@ class Transformer:
         self.trainer["Trainer_ID"] = self.trainer.index.map(lambda x: x + 1)
         self.trainer = self.trainer[["Trainer_ID", "Trainer_Name"]]
 
+
         self.trainer.to_json("output_tables/trainer.json")
+
 
     def create_course_table(self):
         self.course = self.big_table[["course_names", "trainer", "start_date"]].copy()
@@ -494,7 +509,9 @@ class Transformer:
         self.course = self.course[["Course_ID", "trainer", "Course_Name", "start_date"]]
         self.course.columns = ["Course_ID", "Trainer_ID", "Course_Name", "Start_Date"]
 
+
         self.course.to_json("output_tables/course.json")
+
 
     def create_candidates_course_j_table(self):
         self.candidate_course_j = self.big_table[["candidate_id", "course_names"]].copy()
@@ -506,7 +523,9 @@ class Transformer:
         self.candidate_course_j = self.candidate_course_j.astype({'course_id': 'int32'})
         self.candidate_course_j.columns = ["Candidate_ID", "Course_ID"]
 
+
         self.candidate_course_j.to_json("output_tables/candidates_course_j.json")
+
 
     def create_tables(self):
         self.list_attributes()
@@ -540,9 +559,11 @@ class Transformer:
         self.candidate_course_j.name = "CANDIDATE_COURSE_J"
 
     def print_tables(self):
+
         print(self.interview.head())
         print("\n\n")
         print(self.candidates.head())
+
         print("\n\n")
         print(self.tech_skill.head())
         print("\n\n")
