@@ -1,6 +1,7 @@
 import os
 import pyodbc
 import json
+from termcolor import colored
 
 class dockerSetUp:
     """
@@ -13,13 +14,33 @@ class dockerSetUp:
         self.database = 'spartaGlobal'
         self.username = 'SA'
         self.password = 'Pa55word'
-        self.docker_data26project = pyodbc.connect('DRIVER={ODBC Driver 17 for SQL Server};SERVER=' + self.server + ';DATABASE=' + self.database + ';UID=' + self.username + ';PWD=' + self.password)  # connecter
-        self.cursor = self.docker_data26project.cursor()  # pyodbc.Cursor object
-
+        self.docker_data26project = pyodbc.connect('DRIVER={ODBC Driver 17 for SQL Server};SERVER=' + self.server +
+                                                   ';UID=' + self.username + ';PWD=' + self.password, autocommit=True)
+        self.cursor = self.docker_data26project.cursor()
         self.tables = json.load(open('SQL/tables.json')) #Open json file
         self.my_list = []
         self.table_names = list(self.tables.keys())
         self.df_files = os.listdir("output_tables")
+
+    def create_database(self):
+        sql_drop = (
+            "DECLARE @sql AS NVARCHAR(MAX);"
+            "SET @sql = 'DROP DATABASE IF EXISTS ' + QUOTENAME(?);"
+            "EXEC sp_executesql @sql"
+        )
+        sql_create = (
+            "DECLARE @sql AS NVARCHAR(MAX);"
+            "SET @sql = 'CREATE DATABASE ' + QUOTENAME(?);"
+            "EXEC sp_executesql @sql"
+        )
+        self.cursor.execute(sql_drop, self.database)
+        self.cursor.execute(sql_create, self.database)
+        self.cursor.close()
+
+    def connect_to_database(self):
+        self.docker_data26project = pyodbc.connect('DRIVER={ODBC Driver 17 for SQL Server};SERVER=' + self.server +
+                                                   ';DATABASE=' + self.database + ';UID=' + self.username + ';PWD=' + self.password)  # connecter
+        self.cursor = self.docker_data26project.cursor()  # pyodbc.Cursor object
 
     #Output the column names
     def get_column_names(self, table_name):
@@ -54,7 +75,7 @@ class dockerSetUp:
     def pandas_to_SQL(self, df_list):
         for df in df_list:
             df.reset_index(drop=True, inplace=True)
-            print(f"{df.name}")
+            print(f"Uploading to table: {df.name}...")
             for index, row in df.iterrows():
                 command = f'INSERT INTO {df.name} VALUES ('
                 for column in df.keys():
@@ -67,6 +88,7 @@ class dockerSetUp:
                 command = command.replace("'NaT'", 'NULL').replace("'NaN'", 'NULL').replace("'None'", 'NULL')
 
                 self.cursor.execute(command)
+        print(colored("Upload Completed Successfully", "green"))
 
     def close_cursor(self):
         self.cursor.commit()
@@ -75,6 +97,8 @@ class dockerSetUp:
 
 if __name__ == "__main__":
     yi = dockerSetUp()
+    yi.create_database()
+    yi.connect_to_database()
     yi.get_column_names(yi.table_names[0])
     yi.add_table_columns()
     yi.check_table()
